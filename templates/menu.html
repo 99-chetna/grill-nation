@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GRILL NATION Menu</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff8f0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar {
+      background-color: #ff4d4d;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .menu-nav {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .menu-nav button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      font-size: 16px;
+      background-color: #f0ad4e;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .menu-nav button:hover {
+      background-color: #ec971f;
+    }
+
+    .menu-section {
+      display: none;
+      max-width: 700px;
+      margin: auto;
+      align-content: center;
+    }
+
+    .menu-section.active {
+      display: block;
+      align-items: center;
+    }
+
+    .menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+    .menu-item button {
+      padding: 6px 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .menu-item button:hover {
+      background-color: #218838;
+    }
+
+    #cartBox {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #f4f4f4;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    #cartBox ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    #cartBox li {
+      padding: 8px 0;
+      border-bottom: 1px solid #ccc;
+    }
+.item-info {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.item-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.item-price {
+  min-width: 80px;
+  text-align: right;
+  font-weight: 500;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="navbar">🍔 GRILL NATION MENU</div>
+
+  <div class="menu-nav">
+    <button onclick="showSection('burgers')">Burgers</button>
+    <button onclick="showSection('sides')">Sides</button>
+    <button onclick="showSection('beverages')">Beverages</button>
+    <button onclick="showSection('desserts')">Desserts</button>
+  </div>
+
+  <!-- BURGERS -->
+  <!-- BURGERS -->
+<div id="burgers" class="menu-section active">
+  <h2>Burgers</h2>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Original Whopper Veg</span>
+      <span class="item-price">₹179/-</span>
+    </div>
+    <button onclick="addToCart('Original Whopper Veg', 179)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Original Whopper Chicken</span>
+      <span class="item-price">₹199/-</span>
+    </div>
+    <button onclick="addToCart('Original Whopper Chicken', 199)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Korean Spicy Paneer Meal for 1</span>
+      <span class="item-price">₹299/-</span>
+    </div>
+    <button onclick="addToCart('Korean Spicy Paneer Meal for 1', 299)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Korean Spicy Paneer Meal for 2</span>
+      <span class="item-price">₹699/-</span>
+    </div>
+    <button onclick="addToCart('Korean Spicy Paneer Meal for 2', 699)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Korean Spicy Chicken Meal for 1</span>
+      <span class="item-price">₹699/-</span>
+    </div>
+    <button onclick="addToCart('Korean Spicy Chicken Meal for 1', 699)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Crispy Veg Meal</span>
+      <span class="item-price">₹184/-</span>
+    </div>
+    <button onclick="addToCart('Crispy Veg Meal', 184)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Crispy Chicken Meal</span>
+      <span class="item-price">₹204/-</span>
+    </div>
+    <button onclick="addToCart('Crispy Chicken Meal', 204)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Veg Makhani Burst Meal</span>
+      <span class="item-price">₹164/-</span>
+    </div>
+    <button onclick="addToCart('Veg Makhani Burst Meal', 164)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Chicken Makhani Burst Meal</span>
+      <span class="item-price">₹184/-</span>
+    </div>
+    <button onclick="addToCart('Chicken Makhani Burst Meal', 184)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Crunchy Veg Taco Meal</span>
+      <span class="item-price">₹174/-</span>
+    </div>
+    <button onclick="addToCart('Crunchy Veg Taco Meal', 174)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Crunchy Chicken Taco Meal</span>
+      <span class="item-price">₹199/-</span>
+    </div>
+    <button onclick="addToCart('Crunchy Chicken Taco Meal', 199)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Crispy Veg Double Patty Meal</span>
+      <span class="item-price">₹184/-</span>
+    </div>
+    <button onclick="addToCart('Crispy Veg Double Patty Meal', 184)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Crispy Chicken Double Patty Meal</span>
+      <span class="item-price">₹199/-</span>
+    </div>
+    <button onclick="addToCart('Crispy Chicken Double Patty Meal', 199)">Add to Cart</button>
+  </div>
+</div>
+<!-- SIDES -->
+<div id="sides" class="menu-section">
+  <h2>Sides</h2>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Cheesy Fries</span>
+      <span class="item-price">₹99/-</span>
+    </div>
+    <button onclick="addToCart('Cheesy Fries', 99)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Peri Peri Fries (Medium)</span>
+      <span class="item-price">₹119/-</span>
+    </div>
+    <button onclick="addToCart('Peri Peri Fries (Medium)', 119)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Korean Spicy Chicken Wings 4 Pcs</span>
+      <span class="item-price">₹199/-</span>
+    </div>
+    <button onclick="addToCart('Korean Spicy Chicken Wings 4 Pcs', 199)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">10 Veggie Strips</span>
+      <span class="item-price">₹69/-</span>
+    </div>
+    <button onclick="addToCart('10 Veggie Strips', 69)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Masala Hashbrown</span>
+      <span class="item-price">₹99/-</span>
+    </div>
+    <button onclick="addToCart('Masala Hashbrown', 99)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Vanilla Chocolate Muffin</span>
+      <span class="item-price">₹59/-</span>
+    </div>
+    <button onclick="addToCart('Vanilla Chocolate Muffin', 59)">Add to Cart</button>
+  </div>
+</div>
+
+<!-- BEVERAGES -->
+<div id="beverages" class="menu-section">
+  <h2>Beverages</h2>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Coke</span>
+      <span class="item-price">₹59/-</span>
+    </div>
+    <button onclick="addToCart('Coke', 59)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Pepsi</span>
+      <span class="item-price">₹59/-</span>
+    </div>
+    <button onclick="addToCart('Pepsi', 59)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Cola Float</span>
+      <span class="item-price">₹69/-</span>
+    </div>
+    <button onclick="addToCart('Cola Float', 69)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Fanta Float</span>
+      <span class="item-price">₹69/-</span>
+    </div>
+    <button onclick="addToCart('Fanta Float', 69)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Mocha Frappe</span>
+      <span class="item-price">₹179/-</span>
+    </div>
+    <button onclick="addToCart('Mocha Frappe', 179)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Iced Americano</span>
+      <span class="item-price">₹189/-</span>
+    </div>
+    <button onclick="addToCart('Iced Americano', 189)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Chocolate Thickshake</span>
+      <span class="item-price">₹189/-</span>
+    </div>
+    <button onclick="addToCart('Chocolate Thickshake', 189)">Add to Cart</button>
+  </div>
+</div>
+
+<!-- DESSERTS -->
+<div id="desserts" class="menu-section">
+  <h2>Desserts</h2>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Chocolate Brownie</span>
+      <span class="item-price">₹79/-</span>
+    </div>
+    <button onclick="addToCart('Chocolate Brownie', 79)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Hot Fudge Sundae</span>
+      <span class="item-price">₹89/-</span>
+    </div>
+    <button onclick="addToCart('Hot Fudge Sundae', 89)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Vanilla Softy</span>
+      <span class="item-price">₹25/-</span>
+    </div>
+    <button onclick="addToCart('Vanilla Softy', 25)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Choco Dip Softie</span>
+      <span class="item-price">₹39/-</span>
+    </div>
+    <button onclick="addToCart('Choco Dip Softie', 39)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Chocolate Mousse Cup</span>
+      <span class="item-price">₹119/-</span>
+    </div>
+    <button onclick="addToCart('Chocolate Mousse Cup', 119)">Add to Cart</button>
+  </div>
+
+  <div class="menu-item">
+    <div class="item-info">
+      <span class="item-name">Black Currant Sundae</span>
+      <span class="item-price">₹69/-</span>
+    </div>
+    <button onclick="addToCart('Black Currant Sundae', 69)">Add to Cart</button>
+  </div>
+</div>
+
+  
+
+  
+  <!-- CART SECTION -->
+<hr>
+<h2 style="text-align:center;">🛒 Your Cart</h2>
+<div id="cartBox">
+  <ul id="cartItems"></ul>
+  <p><strong>Total:</strong> ₹<span id="cartTotal">0</span></p>
+  <button id="placeOrderBtn" onclick="placeOrder()" style="margin-top: 10px; background-color: rgb(248, 18, 18); color: white; padding: 10px 20px; border: none; border-radius: 6px;">
+  Place Order
+</button>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBcn4k8EfyJcTv25UDgaoNmnA1l0MKK2mw",
+    authDomain: "recommendation-system-27e6b.firebaseapp.com",
+    databaseURL: "https://recommendation-system-27e6b-default-rtdb.firebaseio.com",
+    projectId: "recommendation-system-27e6b",
+    storageBucket: "recommendation-system-27e6b.appspot.com",
+    messagingSenderId: "644925347402",
+    appId: "1:644925347402:web:36225ba2481af5f84538b3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  let cart = [];
+
+  // ✅ Section switching logic
+  window.showSection = function (id) {
+    document.querySelectorAll('.menu-section').forEach(section => {
+      section.classList.remove('active');
+    });
+    document.getElementById(id).classList.add('active');
+  };
+
+  // ✅ Add to Cart
+  window.addToCart = function (name, price) {
+    const existing = cart.find(item => item.name === name);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ name, price, quantity: 1 });
+    }
+    renderCart();
+  };
+
+  // ✅ Remove from Cart
+  window.removeFromCart = function (name) {
+    const index = cart.findIndex(item => item.name === name);
+    if (index !== -1) {
+      cart[index].quantity -= 1;
+      if (cart[index].quantity <= 0) {
+        cart.splice(index, 1);
+      }
+    }
+    renderCart();
+  };
+
+  // ✅ Render Cart
+  function renderCart() {
+    const cartItems = document.getElementById("cartItems");
+    const cartTotal = document.getElementById("cartTotal");
+    const placeOrderBtn = document.getElementById("placeOrderBtn");
+    cartItems.innerHTML = "";
+    let total = 0;
+
+    cart.forEach(item => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        ${item.name} x ${item.quantity} = ₹${item.price * item.quantity}
+        <button onclick="removeFromCart('${item.name}')" style="margin-left:10px;background-color:#dc3545;color:white;border:none;padding:4px 8px;border-radius:4px;">Remove</button>
+      `;
+      cartItems.appendChild(li);
+      total += item.price * item.quantity;
+    });
+
+    cartTotal.textContent = total;
+    placeOrderBtn.style.display = cart.length > 0 ? 'block' : 'none';
+  }
+
+  // ✅ Save cart to Firebase and redirect
+  window.placeOrder = function () {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Please log in before placing an order.");
+      return;
+    }
+
+    const uid = user.uid;
+    const cartRef = ref(db, `cart/${uid}`);
+
+    set(cartRef, cart)
+      .then(() => {
+        console.log("Cart saved to Firebase.");
+        window.location.href = "/ordersummary";
+      })
+      .catch((error) => {
+        console.error("Error saving cart:", error);
+        alert("❌ Failed to save cart. Try again.");
+      });
+  };
+
+  // ✅ Ensure user is logged in
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      alert("Please log in first.");
+      window.location.href = "/signup";
+    }
+  });
+
+</script>
+ 
+
+
+
+</body></html> 
