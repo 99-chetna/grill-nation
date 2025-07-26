@@ -2,7 +2,7 @@ services:
   - type: web
     name: grill-nation
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ""
     startCommand: gunicorn app:app
     envVars:
       - key: GOOGLE_APPLICATION_CREDENTIALS
