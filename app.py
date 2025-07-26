@@ -1,15 +1,23 @@
 from flask import Flask, render_template, request, redirect, url_for
 from firebase_admin import credentials, db, initialize_app
 import os
+import json
 
 # Initialize Flask
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# Firebase Initialization
-cred = credentials.Certificate("firebaseconfig.json")
-initialize_app(cred, {
-    'databaseURL': 'https://recommendation-system-27e6b-default-rtdb.firebaseio.com/'
-})
+# Firebase Initialization using environment variable
+firebase_config = os.environ.get('FIREBASE_CONFIG')
+
+if firebase_config:
+    firebase_dict = json.loads(firebase_config)
+    cred = credentials.Certificate(firebase_dict)
+    initialize_app(cred, {
+        'databaseURL': 'https://recommendation-system-27e6b-default-rtdb.firebaseio.com/'
+    })
+else:
+    raise RuntimeError("FIREBASE_CONFIG environment variable is not set.")
+
 
 @app.route('/')
 def homepage():
