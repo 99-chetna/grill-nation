@@ -519,27 +519,6 @@
   });
 
 </script>
-<div id="recommendations"></div>
-<script>
-firebase.auth().onAuthStateChanged(function(user) {
-  if (user) {
-    fetch(`/recommendations?uid=${user.uid}`)
-      .then(res => res.json())
-      .then(data => {
-        const recDiv = document.getElementById("recommendations");
-        recDiv.innerHTML = "<h3>🍴 Recommended for You</h3>";
-        if (data.recommendations.length === 0) {
-          recDiv.innerHTML += "<p>No recommendations yet.</p>";
-        } else {
-          data.recommendations.forEach(item => {
-            recDiv.innerHTML += `<p>✅ ${item}</p>`;
-          });
-        }
-      })
-      .catch(err => console.error("Error fetching recommendations:", err));
-  }
-});
-</script>
  
 
 

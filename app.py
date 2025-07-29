@@ -1,6 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for
 from firebase_admin import credentials, db, initialize_app
-from collections import Counter
 import os
 import json
 import tempfile
@@ -32,8 +31,7 @@ else:
     raise RuntimeError("FIREBASE_CONFIG environment variable is not set.")
 
 
-# ------------------- ROUTES -------------------
-
+# Your routes
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
@@ -59,38 +57,5 @@ def cart():
     return render_template('cart.html')
 
 
-# ------------------- RECOMMENDATION ROUTE -------------------
-@app.route("/recommendations", methods=["GET"])
-def get_recommendations():
-    uid = request.args.get("uid")
-    if not uid:
-        return jsonify({"error": "User ID required"}), 400
-
-    user_ref = db.reference(f"orders/{uid}/history")
-    user_orders = user_ref.get()
-
-    if not user_orders:
-        # Handle new user: recommend globally popular items
-        all_orders = db.reference("orders").get() or {}
-        global_counts = Counter()
-        for user_data in all_orders.values():
-            history = user_data.get("history", {})
-            for order in history.values():
-                items = order.get("items", {})
-                global_counts.update(items)
-        popular_items = [item for item, _ in global_counts.most_common(3)]
-        return jsonify({"recommendations": popular_items})
-
-    # Count frequency of items for this user
-    user_counts = Counter()
-    for order in user_orders.values():
-        items = order.get("items", {})
-        user_counts.update(items)
-
-    top_items = [item for item, _ in user_counts.most_common(3)]
-    return jsonify({"recommendations": top_items})
-
-
-# ------------------- MAIN -------------------
 if __name__ == '__main__':
     app.run(debug=True)
