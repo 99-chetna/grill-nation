@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Order Summary - Grill Nation</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff8f0;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      color: #d00000;
+      text-align: center;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    input, textarea {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #d00000;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #b80000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🧾 Order Summary</h2>
+    <ul id="summaryList"></ul>
+    <p><strong>Total:</strong> ₹<span id="summaryTotal">0</span></p>
+
+    <h3>👤 Your Details</h3>
+    <input type="text" id="name" placeholder="Enter Name" required />
+    <input type="text" id="phone" placeholder="Phone Number" required />
+    <textarea id="address" placeholder="Delivery Address" required></textarea>
+
+    <button id="confirmBtn">Confirm Order</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+    import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcn4k8EfyJcTv25UDgaoNmnA1l0MKK2mw",
+      authDomain: "recommendation-system-27e6b.firebaseapp.com",
+      databaseURL: "https://recommendation-system-27e6b-default-rtdb.firebaseio.com",
+      projectId: "recommendation-system-27e6b",
+      storageBucket: "recommendation-system-27e6b.appspot.com",
+      messagingSenderId: "644925347402",
+      appId: "1:644925347402:web:36225ba2481af5f84538b3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const summaryList = document.getElementById("summaryList");
+    const summaryTotal = document.getElementById("summaryTotal");
+    const nameInput = document.getElementById("name");
+    const phoneInput = document.getElementById("phone");
+    const addressInput = document.getElementById("address");
+    const confirmBtn = document.getElementById("confirmBtn");
+
+    let cartItems = {};
+    let total = 0;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Please log in first.");
+        window.location.href = "/signup";
+        return;
+      }
+
+      const uid = user.uid;
+
+      // ✅ Fetch user details and pre-fill the inputs
+      const userRef = ref(db, `users/${uid}`);
+      const userSnap = await get(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.val();
+        nameInput.value = userData.name || "";
+        phoneInput.value = userData.phone || "";
+        addressInput.value = userData.address || "";
+      }
+
+      // ✅ Load cart items
+      const cartRef = ref(db, `cart/${uid}`);
+      const snapshot = await get(cartRef);
+
+      if (snapshot.exists()) {
+        cartItems = snapshot.val();
+        summaryList.innerHTML = "";
+        total = 0;
+
+        for (const [key, item] of Object.entries(cartItems)) {
+          const li = document.createElement("li");
+          li.textContent = `${item.name} x ${item.quantity} = ₹${item.price * item.quantity}`;
+          summaryList.appendChild(li);
+          total += item.price * item.quantity;
+        }
+
+        summaryTotal.textContent = total;
+      } else {
+        alert("Your cart is empty.");
+      }
+    });
+
+    confirmBtn.addEventListener("click", async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          alert("You must be logged in.");
+          return;
+        }
+
+        const uid = user.uid;
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const address = addressInput.value.trim();
+
+        if (!name || !phone || !address) {
+          alert("Please fill in all your details.");
+          return;
+        }
+
+        if (Object.keys(cartItems).length === 0) {
+          alert("Cart is empty!");
+          return;
+        }
+
+        const timestamp = new Date().toLocaleString();
+        const orderData = {
+          items: cartItems,
+          total,
+          timestamp,
+          name,
+          phone,
+          address
+        };
+
+        // ✅ Save order data
+        await set(ref(db, `orders/${uid}/latest`), orderData);
+        await push(ref(db, `orders/${uid}/history`), orderData);
+
+        // ✅ Save user details back to Firebase for next time
+        await set(ref(db, `users/${uid}`), { name, phone, address });
+
+        // ✅ Clear cart
+        await remove(ref(db, `cart/${uid}`));
+
+        alert("✅ Order placed successfully!");
+        window.location.href = "/homepage";
+
+      } catch (error) {
+        console.error("Order failed:", error);
+        alert("❌ Failed to place order.");
+      }
+    });
+  </script>
+</body>
+</html>
