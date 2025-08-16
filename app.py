@@ -2,14 +2,14 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from firebase_admin import credentials, db, initialize_app
 import os, json, tempfile
 
-# ML libs used only inside /dashboard
+# ML libs
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = "your_secret_key_here"   # needed for session
 
-# Firebase Initialization
+# -------------------- Firebase Initialization --------------------
 firebase_config = os.environ.get('FIREBASE_CONFIG')
 
 if firebase_config:
@@ -29,7 +29,7 @@ else:
     raise RuntimeError("FIREBASE_CONFIG environment variable is not set.")
 
 
-# -------------------- Your existing routes --------------------
+# -------------------- Routes --------------------
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
@@ -49,9 +49,9 @@ def order_summary():
 @app.route('/cart')
 def cart():
     return render_template('cart.html')
-# ----------------------------------------------------------------
 
 
+# -------------------- Auth --------------------
 @app.route('/login', methods=['POST'])
 def login():
     user_id = request.form.get("user_id")
@@ -61,6 +61,7 @@ def login():
     return redirect(url_for("signup"))
 
 
+# -------------------- Cart --------------------
 @app.route("/add_to_cart", methods=["POST"])
 def add_to_cart():
     if "user_id" not in session:
@@ -85,7 +86,7 @@ def add_to_cart():
     return jsonify({"success": True, "message": f"{item_name} added to cart"}), 200
 
 
-# -------------------- Dashboard with Collaborative Filtering + Popular Fallback --------------------
+# -------------------- Dashboard with Recommendations --------------------
 @app.route('/dashboard')
 def dashboard():
     user_id = session.get("user_id")
@@ -108,7 +109,7 @@ def dashboard():
                             items_bought.append(name)
         user_items[uid] = items_bought
 
-    # --- collaborative filtering part ---
+    # --- collaborative filtering ---
     recommendations = []
     if user_id in user_items and len(user_items[user_id]) > 0:
         all_items = sorted({name for items in user_items.values() for name in items})
@@ -152,30 +153,55 @@ def dashboard():
     menu_data = menu_ref.get() or {}
 
     def find_menu_item(name: str):
-        if isinstance(menu_data, dict) and name in menu_data and isinstance(menu_data[name], dict):
-            d = menu_data[name]
-            return {
-                "name": name,
-                "price": d.get("price"),
-                "image": d.get("image"),
-                "description": d.get("description", "")
-            }
-        for cat, items in (menu_data.items() if isinstance(menu_data, dict) else []):
-            if isinstance(items, list):
-                for it in items:
-                    if isinstance(it, dict) and it.get("name") == name:
-                        return {
-                            "name": it.get("name"),
-                            "price": it.get("price"),
-                            "image": it.get("image"),
-                            "description": it.get("description", "")
-                        }
-        return {"name": name, "price": None, "image": None, "description": ""}
+        name = name.strip().lower()
+        if isinstance(menu_data, dict):
+            for key, value in menu_data.items():
+                # direct dict case
+                if isinstance(value, dict) and key.strip().lower() == name:
+                    return {
+                        "name": key,
+                        "price": value.get("price"),
+                        "image": value.get("image"),
+                        "description": value.get("description", "")
+                    }
+                # list inside categories
+                if isinstance(value, list):
+                    for it in value:
+                        if isinstance(it, dict) and it.get("name", "").strip().lower() == name:
+                            return {
+                                "name": it.get("name"),
+                                "price": it.get("price"),
+                                "image": it.get("image"),
+                                "description": it.get("description", "")
+                            }
+        return {"name": name.title(), "price": None, "image": None, "description": ""}
 
     detailed_recommendations = [find_menu_item(n) for n in recommendations]
 
     return render_template('dashboard.html', recommendations=detailed_recommendations)
 
 
+# -------------------- Place Order --------------------
+@app.route("/place_order", methods=["POST"])
+def place_order():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "User not logged in"}), 401
+
+    user_id = session["user_id"]
+    data = request.get_json(silent=True) or {}
+    items = data.get("items", [])
+
+    if not items:
+        return jsonify({"success": False, "message": "Cart empty"}), 400
+
+    # Push new order into Firebase
+    order_ref = db.reference(f"orders/{user_id}")
+    new_order_ref = order_ref.push()
+    new_order_ref.set({"items": items})
+
+    return jsonify({"success": True, "message": "Order placed successfully"}), 200
+
+
+# -------------------- Run App --------------------
 if __name__ == '__main__':
     app.run(debug=True)

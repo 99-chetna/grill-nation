@@ -188,6 +188,7 @@
 
   <script>
     let cart = [];
+    let currentUser = null; // 🔑 Placeholder: set this from Firebase auth later
 
     function showSection(id) {
       document.querySelectorAll('.menu-section').forEach(section => {
@@ -239,18 +240,39 @@
     }
 
     function placeOrder() {
-      localStorage.setItem("cartData", JSON.stringify(cart));
-      window.location.href = "/cart";
+      if (!currentUser) {
+          alert("Please login to place order.");
+          return;
+      }
+
+      if (cart.length === 0) {
+          alert("Your cart is empty.");
+          return;
+      }
+
+      fetch("/place_order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: cart })
+      })
+      .then(res => res.json())
+      .then(data => {
+          if (data.success) {
+              alert("Order placed successfully!");
+              cart = []; 
+              renderCart();   // ✅ fixed
+              showSection("recommendations"); // auto-show recommendations
+          } else {
+              alert(data.message);
+          }
+      })
+      .catch(err => console.error("Error placing order:", err));
     }
 
-    // ✅ Auto-load Recommended if available
-    window.onload = function() {
-      {% if recommendations %}
+    // ✅ Show recommendations by default
+    window.onload = () => {
         showSection('recommendations');
-      {% else %}
-        showSection('burgers');
-      {% endif %}
-    }
+    };
   </script>
 </body>
 </html>
