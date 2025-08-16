@@ -185,21 +185,116 @@ def dashboard():
 @app.route("/place_order", methods=["POST"])
 def place_order():
     if "user_id" not in session:
-        return jsonify({"success": False, "message": "User not logged in"}), 401
+        return redirect(url_for("signup"))   # redirect if not logged in
 
     user_id = session["user_id"]
     data = request.get_json(silent=True) or {}
     items = data.get("items", [])
 
     if not items:
-        return jsonify({"success": False, "message": "Cart empty"}), 400
+        return redirect(url_for("cart"))     # if empty, send back to cart
 
     # Push new order into Firebase
     order_ref = db.reference(f"orders/{user_id}")
     new_order_ref = order_ref.push()
     new_order_ref.set({"items": items})
 
-    return jsonify({"success": True, "message": "Order placed successfully"}), 200
+    # Redirect to cart after placing order
+    return redirect(url_for("cart"))
+
+# -------------------- Recommendations API --------------------
+@app.route("/recommendations")
+def recommendations():
+    if "user_id" not in session:
+        return jsonify([])
+
+    user_id = session["user_id"]
+
+    # get same recommendations as in dashboard
+    orders_ref = db.reference("orders")
+    orders = orders_ref.get() or {}
+
+    user_items = {}
+    for uid, user_orders in (orders.items() if isinstance(orders, dict) else []):
+        items_bought = []
+        if isinstance(user_orders, dict):
+            for _, details in user_orders.items():
+                if isinstance(details, dict) and "items" in details and isinstance(details["items"], list):
+                    for it in details["items"]:
+                        name = (it.get("name") if isinstance(it, dict) else None)
+                        if name:
+                            items_bought.append(name)
+        user_items[uid] = items_bought
+
+    # recommendation calculation (same as dashboard)
+    recommendations = []
+    if user_id in user_items and len(user_items[user_id]) > 0:
+        all_items = sorted({name for items in user_items.values() for name in items})
+        if all_items:
+            import pandas as pd
+            from sklearn.metrics.pairwise import cosine_similarity
+            df = pd.DataFrame(0, index=list(user_items.keys()), columns=all_items, dtype=int)
+            for uid, items in user_items.items():
+                for name in items:
+                    if name in df.columns:
+                        df.at[uid, name] = 1
+
+            if df.loc[user_id].sum() > 0:
+                sim_matrix = cosine_similarity(df.values)
+                sim_df = pd.DataFrame(sim_matrix, index=df.index, columns=df.index)
+
+                similar_users = sim_df[user_id].drop(user_id).sort_values(ascending=False)
+
+                user_history = set(user_items[user_id])
+                candidate_scores = {}
+
+                for other_uid, sim_score in similar_users.items():
+                    if sim_score <= 0:
+                        continue
+                    for item_name in user_items.get(other_uid, []):
+                        if item_name in user_history:
+                            continue
+                        candidate_scores[item_name] = candidate_scores.get(item_name, 0) + float(sim_score)
+
+                if candidate_scores:
+                    recommendations = [k for k, _ in sorted(candidate_scores.items(), key=lambda x: x[1], reverse=True)[:8]]
+
+    if not recommendations:
+        all_counts = {}
+        for items in user_items.values():
+            for it in items:
+                all_counts[it] = all_counts.get(it, 0) + 1
+        recommendations = [k for k, _ in sorted(all_counts.items(), key=lambda x: x[1], reverse=True)[:8]]
+
+    # join with menu
+    menu_ref = db.reference("menu")
+    menu_data = menu_ref.get() or {}
+
+    def find_menu_item(name: str):
+        name = name.strip().lower()
+        if isinstance(menu_data, dict):
+            for key, value in menu_data.items():
+                if isinstance(value, dict) and key.strip().lower() == name:
+                    return {
+                        "name": key,
+                        "price": value.get("price"),
+                        "image": value.get("image"),
+                        "description": value.get("description", "")
+                    }
+                if isinstance(value, list):
+                    for it in value:
+                        if isinstance(it, dict) and it.get("name", "").strip().lower() == name:
+                            return {
+                                "name": it.get("name"),
+                                "price": it.get("price"),
+                                "image": it.get("image"),
+                                "description": it.get("description", "")
+                            }
+        return {"name": name.title(), "price": None, "image": None, "description": ""}
+
+    detailed_recommendations = [find_menu_item(n) for n in recommendations]
+
+    return jsonify(detailed_recommendations)
 
 
 # -------------------- Run App --------------------

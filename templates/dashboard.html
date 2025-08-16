@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Ordering Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🍴 Food Ordering System</h1>
+    <nav>
+      <button onclick="showSection('menu')">Menu</button>
+      <button onclick="showSection('cart')">Cart</button>
+      <button onclick="showSection('recommendations')">Recommendations</button>
+    </nav>
+  </header>
+
+  <!-- ✅ Menu Section -->
+  <section id="menu" class="section">
+    <h2>📋 Menu</h2>
+    <div class="menu-item">
+      <div class="item-info">
+        <span class="item-name">Pizza</span>
+        <span class="item-price">₹200/-</span>
+      </div>
+      <button onclick="addToCart('Pizza', 200)">Add to Cart</button>
+    </div>
+    <div class="menu-item">
+      <div class="item-info">
+        <span class="item-name">Burger</span>
+        <span class="item-price">₹120/-</span>
+      </div>
+      <button onclick="addToCart('Burger', 120)">Add to Cart</button>
+    </div>
+    <div class="menu-item">
+      <div class="item-info">
+        <span class="item-name">Pasta</span>
+        <span class="item-price">₹150/-</span>
+      </div>
+      <button onclick="addToCart('Pasta', 150)">Add to Cart</button>
+    </div>
+  </section>
+
+  <!-- ✅ Cart Section -->
+  <section id="cart" class="section" style="display:none;">
+    <h2>🛒 Your Cart</h2>
+    <ul id="cartList"></ul>
+    <p id="totalPrice">Total: ₹0/-</p>
+    <button onclick="placeOrder()">Place Order</button>
+  </section>
+
+  <!-- ✅ Recommendations Section -->
+  <section id="recommendations" class="section" style="display:none;">
+    <h2>🔥 Recommended for You</h2>
+    <div id="recommendationList">
+      <p>No recommendations yet. Order something to get suggestions!</p>
+    </div>
+  </section>
+
+  <script>
+    let cart = [];
+
+    // ✅ Show Sections
+    function showSection(sectionId) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = "none");
+      document.getElementById(sectionId).style.display = "block";
+    }
+
+    // ✅ Add to Cart
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      renderCart();
+    }
+
+    // ✅ Render Cart
+    function renderCart() {
+      const list = document.getElementById("cartList");
+      list.innerHTML = "";
+      let total = 0;
+      cart.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.name} - ₹${item.price}/-`;
+        list.appendChild(li);
+        total += item.price;
+      });
+      document.getElementById("totalPrice").textContent = "Total: ₹" + total + "/-";
+    }
+
+    // ✅ Place Order
+    function placeOrder() {
+      fetch("https://your-backend-url.onrender.com/place_order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: cart })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert("Order placed successfully!");
+          cart = [];
+          renderCart();
+          loadRecommendations();   // 🔥 Fetch recommendations after placing order
+          showSection("recommendations");
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(err => console.error("Error placing order:", err));
+    }
+
+    // ✅ Load Recommendations from backend
+    function loadRecommendations() {
+      fetch("https://your-backend-url.onrender.com/recommendations")
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("recommendationList");
+        container.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          container.innerHTML = "<p>No recommendations yet. Order something to get suggestions!</p>";
+          return;
+        }
+
+        data.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "menu-item";
+          div.innerHTML = `
+            <div class="item-info">
+              <span class="item-name">${item.name}</span>
+              <span class="item-price">₹${item.price}/-</span>
+            </div>
+            <button onclick="addToCart('${item.name}', ${item.price})">Add to Cart</button>
+          `;
+          container.appendChild(div);
+        });
+      })
+      .catch(err => console.error("Error loading recommendations:", err));
+    }
+  </script>
+</body>
+</html>

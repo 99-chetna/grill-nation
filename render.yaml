@@ -5,5 +5,5 @@ services:
     buildCommand: ""
     startCommand: gunicorn app:app
     envVars:
-      - key: GOOGLE_APPLICATION_CREDENTIALS
+      - key: FIREBASE_CONFIG
         value: firebaseconfig.json
