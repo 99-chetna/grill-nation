@@ -181,7 +181,7 @@
         await remove(ref(db, `cart/${uid}`));
 
         alert("✅ Order placed successfully!");
-        window.location.href = "/homepage";
+        window.location.href = "/";
 
       } catch (error) {
         console.error("Order failed:", error);
