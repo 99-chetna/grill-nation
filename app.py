@@ -138,6 +138,10 @@ def order_summary():
 def cart():
     return render_template('cart.html')
 
+@app.route("/success")
+def success():
+    return render_template("success.html")
+
 
 # -------------------- Auth --------------------
 @app.route('/login', methods=['POST'])
@@ -204,7 +208,7 @@ def place_order():
     new_order_ref.set({"items": items})
 
     return jsonify({"success": True, "message": "Order placed successfully"})
-                
+
 
 # -------------------- Recommendations API --------------------
 @app.route("/recommendations")
