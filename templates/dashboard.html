@@ -57,7 +57,6 @@
       <p>No recommendations yet. Order something to get suggestions!</p>
     </div>
   </section>
-
   <script>
     let cart = [];
 
@@ -100,15 +99,13 @@
           alert("Order placed successfully!");
           cart = [];
           renderCart();
-          loadRecommendations();   // 🔥 Fetch recommendations after placing order
-          showSection("recommendations");
+          showSection("cart");   // stay on cart after order
         } else {
           alert(data.message);
         }
       })
       .catch(err => console.error("Error placing order:", err));
     }
-
   </script>
 </body>
 </html>
