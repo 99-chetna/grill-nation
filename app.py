@@ -210,15 +210,6 @@ def place_order():
     return jsonify({"success": True, "message": "Order placed successfully"})
 
 
-# -------------------- Recommendations API --------------------
-@app.route("/recommendations")
-def recommendations():
-    if "user_id" not in session:
-        return jsonify([])
-
-    user_id = session["user_id"]
-    detailed_recommendations = generate_recommendations(user_id)
-    return jsonify(detailed_recommendations)
 
 
 # -------------------- Run App --------------------
