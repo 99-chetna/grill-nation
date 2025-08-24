@@ -138,7 +138,7 @@ def order_summary():
 def cart():
     return render_template('cart.html')
 
-@app.route("/success")
+@app.route("//")
 def success():
     return render_template("success.html")
 
