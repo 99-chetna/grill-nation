@@ -61,22 +61,37 @@
 </button>
 
   </div>
+<script>
+  async function loadRecommendations() {
+    try {
+      const res = await fetch("/api/recommendations");
+      const data = await res.json();
 
-  <script>
-    // Example recommendations (later connect with collaborative filtering)
-    const recs = [
-      "Chef’s Special Pasta 🍝 — people who loved Pizza enjoyed it.",
-      "Grilled Chicken Burger 🍔 — recommended by foodies who loved Whoppers.",
-      "Chocolate Lava Cake 🍫 — a sweet favorite after spicy meals."
-    ];
+      const recList = document.getElementById("recommendList");
+      recList.innerHTML = "";
 
-    const recList = document.getElementById("recommendList");
-    recs.forEach(rec => {
-      const div = document.createElement("div");
-      div.className = "item";
-      div.textContent = rec;
-      recList.appendChild(div);
-    });
-  </script>
+      if (data.length === 0) {
+        recList.innerHTML = "<p>No recommendations yet. Try ordering more 😊</p>";
+      } else {
+        data.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <strong>${item.name}</strong> 
+            ${item.price ? " - ₹" + item.price : ""} <br>
+            ${item.description || ""}
+          `;
+          recList.appendChild(div);
+        });
+      }
+    } catch (err) {
+      console.error("Error loading recommendations:", err);
+    }
+  }
+
+  // Call when page loads
+  loadRecommendations();
+</script>
+
 </body>
 </html>

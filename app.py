@@ -140,7 +140,11 @@ def cart():
 
 @app.route("/success")
 def success():
-    return render_template("success.html")
+    user_id = session.get("user_id")
+    recommendations = []
+    if user_id:
+        recommendations = generate_recommendations(user_id)
+    return render_template("success.html", recommendations=recommendations)
 
 
 # -------------------- Auth --------------------
