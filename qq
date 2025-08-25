@@ -1,0 +1,46 @@
+[33m486359f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: commit: new code
+[33me9ba78c[m HEAD@{1}: reset: moving to e9ba78c
+[33m020ac8f[m HEAD@{2}: commit: try my best
+[33me9ba78c[m HEAD@{3}: commit: adding recommendation logic in success.html page
+[33m185f7eb[m HEAD@{4}: reset: moving to 185f7eb
+[33mc92a2c8[m HEAD@{5}: commit: recommendation
+[33m9c40aee[m HEAD@{6}: commit: try to run recommend part
+[33ma36809f[m HEAD@{7}: commit: try to show recommendation
+[33mc8b420e[m HEAD@{8}: commit: old layout restored
+[33m5354143[m HEAD@{9}: commit: fallback added
+[33md942433[m HEAD@{10}: commit: made recommendations code for success page
+[33mdf55701[m HEAD@{11}: commit: no recommendation
+[33m185f7eb[m HEAD@{12}: commit: cleaned code
+[33m5c10ed2[m HEAD@{13}: commit: removed old recommendation part
+[33m9303c21[m HEAD@{14}: commit: removed pop up
+[33m332ccfc[m HEAD@{15}: commit: changes made to redirect to successpage
+[33m679304f[m HEAD@{16}: commit: try to change ordersummary to success page
+[33m67fe820[m HEAD@{17}: commit: changed route in ordersummary
+[33ma4f314e[m HEAD@{18}: reset: moving to HEAD@{7}
+[33mfa19fd2[m HEAD@{19}: reset: moving to HEAD@{9}
+[33m61aba0b[m HEAD@{20}: reset: moving to HEAD@{6}
+[33m4549c91[m HEAD@{21}: reset: moving to HEAD~2
+[33mfa19fd2[m HEAD@{22}: reset: moving to HEAD~1
+[33mf42983d[m HEAD@{23}: reset: moving to HEAD~4
+[33ma346d72[m HEAD@{24}: commit: updated successpage
+[33m1330999[m HEAD@{25}: commit: updated routes
+[33ma4f314e[m HEAD@{26}: commit: added route
+[33m61aba0b[m HEAD@{27}: commit: made new page success.html
+[33mf42983d[m HEAD@{28}: commit: please hoja
+[33mfa19fd2[m HEAD@{29}: commit: updation
+[33m65b01ae[m HEAD@{30}: commit: updated app.py
+[33m4549c91[m HEAD@{31}: commit: updated
+[33mfcce19c[m HEAD@{32}: commit: updation
+[33m7485761[m HEAD@{33}: commit: updated recommendations
+[33m3dd6e7e[m HEAD@{34}: pull origin main --rebase (finish): returning to refs/heads/main
+[33m3dd6e7e[m HEAD@{35}: pull origin main --rebase (pick): Added collaborative filtering recommendations
+[33mfa4e62f[m HEAD@{36}: pull origin main --rebase (start): checkout fa4e62f37d7bd7dcac3edc063191f85cecdbdb04
+[33m0a27d93[m HEAD@{37}: commit: Added collaborative filtering recommendations
+[33m3c6108a[m HEAD@{38}: commit: updated ordersummary
+[33mcfdac70[m HEAD@{39}: commit: Fix newline characters in Firebase private key
+[33m5c057fc[m HEAD@{40}: commit: use firebase config from env var
+[33m4877e49[m HEAD@{41}: commit: Cleaned up requirements for Render deployment
+[33ma26ab42[m HEAD@{42}: commit: Ready for Render deployment
+[33mc8cc47b[m HEAD@{43}: commit: Add full project files
+[33mda5ad38[m HEAD@{44}: Branch: renamed refs/heads/master to refs/heads/main
+[33mda5ad38[m HEAD@{46}: commit (initial): Initialize repo, add .gitignore, stop tracking firebaseconfig.json

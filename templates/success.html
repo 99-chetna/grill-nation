@@ -79,7 +79,17 @@
           div.innerHTML = `
             <strong>${item.name}</strong> 
             ${item.price ? " - ₹" + item.price : ""} <br>
-            ${item.description || ""}
+            ${item.description || ""} <br>
+
+            <button onclick="addToCart('${item.name}', ${item.price || 0})"
+              style="margin-top:8px; padding:6px 12px; background:#008000; color:white; border:none; border-radius:6px; cursor:pointer;">
+              ➕ Add to Cart
+            </button>
+
+            <button onclick="quickOrder('${item.name}', ${item.price || 0})"
+              style="margin-top:8px; margin-left:5px; padding:6px 12px; background:#ff6600; color:white; border:none; border-radius:6px; cursor:pointer;">
+              🛒 Order Now
+            </button>
           `;
           recList.appendChild(div);
         });
@@ -89,7 +99,35 @@
     }
   }
 
-  // Call when page loads
+  async function addToCart(itemName, price) {
+    try {
+      const res = await fetch("/add_to_cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: itemName, quantity: 1, price: price })
+      });
+      const data = await res.json();
+      alert(data.message);
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+    }
+  }
+
+  async function quickOrder(itemName, price) {
+    try {
+      const res = await fetch("/quick_order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: itemName, quantity: 1, price: price })
+      });
+      const data = await res.json();
+      alert(data.message);
+      if (data.success) window.location.href = "/success";
+    } catch (err) {
+      console.error("Error placing quick order:", err);
+    }
+  }
+
   loadRecommendations();
 </script>
 

@@ -213,6 +213,37 @@ def place_order():
 
     return jsonify({"success": True, "message": "Order placed successfully"})
 
+@app.route("/api/recommendations")
+def api_recommendations():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify([])
+    return jsonify(generate_recommendations(user_id))
+
+
+@app.route("/quick_order", methods=["POST"])
+def quick_order():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "User not logged in"}), 401
+
+    user_id = session["user_id"]
+    data = request.get_json(silent=True) or {}
+    item_name = data.get("item")
+    qty = int(data.get("quantity", 1))
+    price = data.get("price", 0)
+
+    if not item_name:
+        return jsonify({"success": False, "message": "No item provided"}), 400
+
+    # Save new order directly in Firebase
+    order_ref = db.reference(f"orders/{user_id}")
+    new_order_ref = order_ref.push()
+    new_order_ref.set({
+        "items": [{"name": item_name, "quantity": qty, "price": price}]
+    })
+
+    return jsonify({"success": True, "message": f"Order placed for {item_name}"}), 200
+
 
 
 
