@@ -30,8 +30,9 @@ else:
 
 
 # -------------------- Helper: Recommendation Logic --------------------
+# -------------------- Helper: Recommendation Logic --------------------
 def generate_recommendations(user_id: str):
-    """Generate detailed recommendations for a user."""
+    """Generate recommendations for a user (only name + price)."""
     orders_ref = db.reference("orders")
     orders = orders_ref.get() or {}
 
@@ -99,20 +100,16 @@ def generate_recommendations(user_id: str):
                 if isinstance(value, dict) and key.strip().lower() == name:
                     return {
                         "name": key,
-                        "price": value.get("price"),
-                        "image": value.get("image"),
-                        "description": value.get("description", "")
+                        "price": value.get("price")
                     }
                 if isinstance(value, list):
                     for it in value:
                         if isinstance(it, dict) and it.get("name", "").strip().lower() == name:
                             return {
                                 "name": it.get("name"),
-                                "price": it.get("price"),
-                                "image": it.get("image"),
-                                "description": it.get("description", "")
+                                "price": it.get("price")
                             }
-        return {"name": name.title(), "price": None, "image": None, "description": ""}
+        return {"name": name.title(), "price": None}
 
     return [find_menu_item(n) for n in recommendations]
 

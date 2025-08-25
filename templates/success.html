@@ -79,7 +79,6 @@
           div.innerHTML = `
             <strong>${item.name}</strong> 
             ${item.price ? " - ₹" + item.price : ""} <br>
-            ${item.description || ""} <br>
 
             <button onclick="addToCart('${item.name}', ${item.price || 0})"
               style="margin-top:8px; padding:6px 12px; background:#008000; color:white; border:none; border-radius:6px; cursor:pointer;">
@@ -130,6 +129,5 @@
 
   loadRecommendations();
 </script>
-
 </body>
 </html>
