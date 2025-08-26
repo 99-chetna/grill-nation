@@ -9,7 +9,7 @@ from flask import Flask, request, session, redirect, url_for, render_template, j
 
 # -------------------- Flask App --------------------
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY")
+app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
 
 # -------------------- Firebase Setup --------------------
 # Pyrebase (Auth only)
@@ -20,9 +20,11 @@ pb_auth = firebase.auth()
 # Admin SDK (Realtime DB, Storage, Firestore)
 firebase_admin_config = json.loads(os.environ["FIREBASE_ADMIN_SDK"])
 cred = credentials.Certificate(firebase_admin_config)
-firebase_admin.initialize_app(cred, {
-    "databaseURL": firebase_web_config["databaseURL"]
-})
+
+if not firebase_admin._apps:  # ✅ prevents multiple initializations
+    firebase_admin.initialize_app(cred, {
+        "databaseURL": firebase_web_config["databaseURL"]
+    })
 
 # -------------------- Recommendation Logic --------------------
 def generate_recommendations(user_id: str):
