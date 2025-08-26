@@ -29,10 +29,12 @@ if not firebase_admin._apps:  # ✅ prevents multiple initializations
 # -------------------- Recommendation Logic --------------------
 def generate_recommendations(user_id: str):
     """Generate recommendations for a user (name + price)."""
+    # ---------------- Orders ----------------
     orders_ref = db.reference("orders")
     orders = orders_ref.get() or {}
+    print("📦 Orders from DB:", orders)
 
-    # Build user -> items purchased mapping
+    # Build user -> items mapping
     user_items = {}
     for uid, user_orders in (orders.items() if isinstance(orders, dict) else []):
         items_bought = []
@@ -52,7 +54,9 @@ def generate_recommendations(user_id: str):
         if items_bought:
             user_items[uid] = items_bought
 
-    # --- collaborative filtering ---
+    print("👤 User → Items mapping:", user_items)
+
+    # ---------------- Collaborative Filtering ----------------
     recommendations = []
     if user_id in user_items and user_items[user_id]:
         all_items = sorted({name for items in user_items.values() for name in items})
@@ -68,6 +72,7 @@ def generate_recommendations(user_id: str):
                 sim_df = pd.DataFrame(sim_matrix, index=df.index, columns=df.index)
 
                 similar_users = sim_df[user_id].drop(user_id).sort_values(ascending=False)
+                print("🔗 Similar users:", similar_users.to_dict())
 
                 user_history = set(user_items[user_id])
                 candidate_scores = {}
@@ -85,7 +90,7 @@ def generate_recommendations(user_id: str):
                                              key=lambda x: x[1], reverse=True)[:8]
                     ]
 
-    # --- fallback to popular items ---
+    # ---------------- Popular Fallback ----------------
     if not recommendations:
         all_counts = {}
         for items in user_items.values():
@@ -93,25 +98,43 @@ def generate_recommendations(user_id: str):
                 all_counts[it] = all_counts.get(it, 0) + 1
         recommendations = [k for k, _ in sorted(all_counts.items(), key=lambda x: x[1], reverse=True)[:8]]
 
-    # --- join with menu ---
+    print("✨ Raw recommendations:", recommendations)
+
+    # ---------------- Join with Menu ----------------
     menu_ref = db.reference("menu")
     menu_data = menu_ref.get() or {}
+    print("📖 Menu data:", menu_data)
+
+    def normalize(text: str) -> str:
+        return "".join(text.lower().split())
 
     def find_menu_item(name: str):
-        name_l = name.strip().lower()
+        target = normalize(name)
         if isinstance(menu_data, dict):
-            if name_l in (k.strip().lower() for k in menu_data.keys()):
-                for key, value in menu_data.items():
-                    if key.strip().lower() == name_l:
-                        return {"name": key, "price": value.get("price")}
-            for _, value in menu_data.items():
+            # Case 1: direct key match
+            for key, value in menu_data.items():
+                if normalize(key) == target and isinstance(value, dict):
+                    return {"name": key, "price": value.get("price")}
+
+                # Case 2: inside category list
                 if isinstance(value, list):
                     for it in value:
-                        if isinstance(it, dict) and it.get("name", "").strip().lower() == name_l:
+                        if isinstance(it, dict) and normalize(it.get("name", "")) == target:
                             return {"name": it.get("name"), "price": it.get("price")}
+
+            # Case 3: fuzzy/substring match
+            for key, value in menu_data.items():
+                if isinstance(value, list):
+                    for it in value:
+                        if isinstance(it, dict) and target in normalize(it.get("name", "")):
+                            return {"name": it.get("name"), "price": it.get("price")}
+        # Fallback
         return {"name": name, "price": None}
 
-    return [find_menu_item(n) for n in recommendations]
+    final_recs = [find_menu_item(n) for n in recommendations]
+    print("✅ Final recommendations:", final_recs)
+
+    return final_recs
 
 # -------------------- Routes --------------------
 @app.route('/')
@@ -217,12 +240,20 @@ def place_order():
     return jsonify({"success": True, "message": "Order placed successfully"})
 
 # -------------------- API --------------------
-@app.route("/api/recommendations")
+@app.route("/api/recommendations", methods=["GET"])
 def api_recommendations():
+    """API endpoint to fetch recommendations for the logged-in user."""
     user_id = session.get("user_id")
     if not user_id:
-        return jsonify([])
-    return jsonify(generate_recommendations(user_id))
+        return jsonify({"error": "User not logged in", "recommendations": []}), 401
+
+    try:
+        recs = generate_recommendations(user_id)
+        return jsonify({"user_id": user_id, "recommendations": recs}), 200
+    except Exception as e:
+        print("❌ Error generating recommendations:", str(e))
+        return jsonify({"error": "Failed to generate recommendations", "details": str(e)}), 500
+
 
 # -------------------- Quick Order --------------------
 @app.route("/quick_order", methods=["POST"])
