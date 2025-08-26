@@ -29,6 +29,7 @@ if not firebase_admin._apps:  # ✅ prevents multiple initializations
 # -------------------- Recommendation Logic --------------------
 def generate_recommendations(user_id: str):
     """Generate recommendations for a user (name + price)."""
+
     # ---------------- Orders ----------------
     orders_ref = db.reference("orders")
     orders = orders_ref.get() or {}
@@ -109,28 +110,31 @@ def generate_recommendations(user_id: str):
         return "".join(text.lower().split())
 
     def find_menu_item(name: str):
-        target = normalize(name)
+        target = normalize(name)   # ✅ correctly indented
+
         if isinstance(menu_data, dict):
-            # Case 1: direct key match
+            # Case 1: direct key match (if menu had direct item keys)
             for key, value in menu_data.items():
                 if normalize(key) == target and isinstance(value, dict):
                     return {"name": key, "price": value.get("price")}
 
-                # Case 2: inside category list
+            # Case 2 + Case 3: check inside categories
+            for _, value in menu_data.items():
                 if isinstance(value, list):
                     for it in value:
-                        if isinstance(it, dict) and normalize(it.get("name", "")) == target:
-                            return {"name": it.get("name"), "price": it.get("price")}
+                        if isinstance(it, dict):
+                            item_name = it.get("name", "")
+                            # exact match
+                            if normalize(item_name) == target:
+                                return {"name": item_name, "price": it.get("price")}
+                            # substring match
+                            if target in normalize(item_name):
+                                return {"name": item_name, "price": it.get("price")}
 
-            # Case 3: fuzzy/substring match
-            for key, value in menu_data.items():
-                if isinstance(value, list):
-                    for it in value:
-                        if isinstance(it, dict) and target in normalize(it.get("name", "")):
-                            return {"name": it.get("name"), "price": it.get("price")}
-        # Fallback
+        # Fallback if not found
         return {"name": name, "price": None}
 
+    # ---------------- Finalize ----------------
     final_recs = [find_menu_item(n) for n in recommendations]
     print("✅ Final recommendations:", final_recs)
 
