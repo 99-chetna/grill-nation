@@ -1,44 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from firebase_admin import credentials, db, initialize_app, auth
-import pyrebase
-import os, json, tempfile
-
-# ML libs
+import os
+import json
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
+import firebase_admin
+from firebase_admin import credentials, db
+import pyrebase
+from flask import Flask, request, session, redirect, url_for, render_template, jsonify
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
-app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")   # needed for session
+# -------------------- Flask App --------------------
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY")
 
-# -------------------- Firebase Initialization --------------------
-firebase_config = os.environ.get('FIREBASE_CONFIG')
-if not firebase_config:
-    raise RuntimeError("FIREBASE_CONFIG environment variable is not set.")
+# -------------------- Firebase Setup --------------------
+# Pyrebase (Auth only)
+firebase_web_config = json.loads(os.environ["FIREBASE_CONFIG"])
+firebase = pyrebase.initialize_app(firebase_web_config)
+pb_auth = firebase.auth()
 
-firebase_dict = json.loads(firebase_config)
-if "private_key" in firebase_dict:
-    firebase_dict["private_key"] = firebase_dict["private_key"].replace("\\n", "\n")
-
-with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as temp_file:
-    json.dump(firebase_dict, temp_file)
-    temp_file_path = temp_file.name
-
-cred = credentials.Certificate(temp_file_path)
-initialize_app(cred, {
-    'databaseURL': 'https://recommendation-system-27e6b-default-rtdb.firebaseio.com/'
+# Admin SDK (Realtime DB, Storage, Firestore)
+firebase_admin_config = json.loads(os.environ["FIREBASE_ADMIN_SDK"])
+cred = credentials.Certificate(firebase_admin_config)
+firebase_admin.initialize_app(cred, {
+    "databaseURL": firebase_web_config["databaseURL"]
 })
 
-# Pyrebase for email/password login
-pb_config = {
-    "apiKey": firebase_dict["apiKey"],
-    "authDomain": f"{firebase_dict['project_id']}.firebaseapp.com",
-    "databaseURL": "https://recommendation-system-27e6b-default-rtdb.firebaseio.com/",
-    "storageBucket": f"{firebase_dict['project_id']}.appspot.com",
-}
-pb = pyrebase.initialize_app(pb_config)
-pb_auth = pb.auth()
-
-# -------------------- Helper: Recommendation Logic --------------------
+# -------------------- Recommendation Logic --------------------
 def generate_recommendations(user_id: str):
     """Generate recommendations for a user (name + price)."""
     orders_ref = db.reference("orders")
@@ -92,8 +78,10 @@ def generate_recommendations(user_id: str):
                         candidate_scores[item_name] = candidate_scores.get(item_name, 0) + float(sim_score)
 
                 if candidate_scores:
-                    recommendations = [k for k, _ in sorted(candidate_scores.items(),
-                                                           key=lambda x: x[1], reverse=True)[:8]]
+                    recommendations = [
+                        k for k, _ in sorted(candidate_scores.items(),
+                                             key=lambda x: x[1], reverse=True)[:8]
+                    ]
 
     # --- fallback to popular items ---
     if not recommendations:
