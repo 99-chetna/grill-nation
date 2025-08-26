@@ -74,15 +74,13 @@
       const recList = document.getElementById("recommendList");
       recList.innerHTML = "";
 
-      if (!Array.isArray(data)) {
-        recList.innerHTML = `<p>⚠️ Error: Unexpected response format</p>`;
-        return;
-      }
+      // ✅ Access correct array
+      const recommendations = data.recommendations || [];
 
-      if (data.length === 0) {
+      if (recommendations.length === 0) {
         recList.innerHTML = "<p>No recommendations yet. Try ordering more 😊</p>";
       } else {
-        data.forEach(item => {
+        recommendations.forEach(item => {
           console.log("👉 Rendering recommendation item:", item);
 
           const div = document.createElement("div");
@@ -144,5 +142,6 @@
 
   loadRecommendations();
 </script>
+
 </body>
 </html>
