@@ -64,16 +64,27 @@
 <script>
   async function loadRecommendations() {
     try {
+      console.log("🔄 Fetching recommendations from /api/recommendations...");
       const res = await fetch("/api/recommendations");
+      console.log("📡 Response status:", res.status);
+
       const data = await res.json();
+      console.log("📥 Raw API data:", data);
 
       const recList = document.getElementById("recommendList");
       recList.innerHTML = "";
+
+      if (!Array.isArray(data)) {
+        recList.innerHTML = `<p>⚠️ Error: Unexpected response format</p>`;
+        return;
+      }
 
       if (data.length === 0) {
         recList.innerHTML = "<p>No recommendations yet. Try ordering more 😊</p>";
       } else {
         data.forEach(item => {
+          console.log("👉 Rendering recommendation item:", item);
+
           const div = document.createElement("div");
           div.className = "item";
           div.innerHTML = `
@@ -94,7 +105,9 @@
         });
       }
     } catch (err) {
-      console.error("Error loading recommendations:", err);
+      console.error("❌ Error loading recommendations:", err);
+      document.getElementById("recommendList").innerHTML =
+        "<p>⚠️ Failed to load recommendations.</p>";
     }
   }
 
@@ -106,9 +119,10 @@
         body: JSON.stringify({ item: itemName, quantity: 1, price: price })
       });
       const data = await res.json();
+      console.log("🛒 Add to cart response:", data);
       alert(data.message);
     } catch (err) {
-      console.error("Error adding to cart:", err);
+      console.error("❌ Error adding to cart:", err);
     }
   }
 
@@ -120,10 +134,11 @@
         body: JSON.stringify({ item: itemName, quantity: 1, price: price })
       });
       const data = await res.json();
+      console.log("⚡ Quick order response:", data);
       alert(data.message);
       if (data.success) window.location.href = "/success";
     } catch (err) {
-      console.error("Error placing quick order:", err);
+      console.error("❌ Error placing quick order:", err);
     }
   }
 

@@ -35,11 +35,6 @@ def generate_recommendations(user_id: str):
     orders_ref = db.reference("orders")
     orders = orders_ref.get() or {}
 
-    # 🔍 Debug: see what Firebase returned
-    import json
-    print("🔥 Raw Orders Data:")
-    print(json.dumps(orders, indent=2))
-
     # Build user -> items purchased mapping
     user_items = {}
     for uid, user_orders in (orders.items() if isinstance(orders, dict) else []):
@@ -160,13 +155,15 @@ def success():
 
 
 # -------------------- Auth --------------------
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    user_id = request.form.get("user_id")
-    if user_id:
-        session["user_id"] = user_id
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("signup"))
+    if request.method == 'POST':
+        user_id = request.form.get("user_id")
+        if user_id:
+            session["user_id"] = user_id
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("signup"))
+    return render_template("login.html")
 
 
 # -------------------- Cart --------------------
@@ -178,20 +175,21 @@ def add_to_cart():
     payload = request.get_json(silent=True) or {}
     item_name = payload.get("item")
     qty = int(payload.get("quantity", 1))
+    price = payload.get("price", 0)
 
     if not item_name:
         return jsonify({"success": False, "message": "No item provided"}), 400
 
     user_id = session["user_id"]
-    cart_ref = db.reference(f"carts/{user_id}/{item_name}")
+    cart_ref = db.reference(f"carts/{user_id}")
+    cart = cart_ref.get() or []
 
-    current = cart_ref.get()
-    if current and isinstance(current, dict) and "quantity" in current:
-        cart_ref.update({"quantity": int(current["quantity"]) + qty})
-    else:
-        cart_ref.set({"quantity": qty})
+    # Append new item
+    cart.append({"name": item_name, "quantity": qty, "price": price})
+    cart_ref.set(cart)
 
     return jsonify({"success": True, "message": f"{item_name} added to cart"}), 200
+
 
 
 # -------------------- Dashboard with Recommendations --------------------
@@ -207,13 +205,14 @@ def dashboard():
 
 # -------------------- Place Order --------------------
 @app.route("/place_order", methods=["POST"])
+@app.route("/place_order", methods=["POST"])
 def place_order():
     if "user_id" not in session:
         return jsonify({"success": False, "message": "User not logged in"}), 401
 
     user_id = session["user_id"]
-    data = request.get_json(silent=True) or {}
-    items = data.get("items", [])
+    cart_ref = db.reference(f"carts/{user_id}")
+    items = cart_ref.get() or []
 
     if not items:
         return jsonify({"success": False, "message": "Cart is empty"}), 400
@@ -223,7 +222,12 @@ def place_order():
     new_order_ref = order_ref.push()
     new_order_ref.set({"items": items})
 
+    # ✅ Clear cart
+    cart_ref.set([])
+
     return jsonify({"success": True, "message": "Order placed successfully"})
+
+# -------------------- recommendtion route --------------------
 
 @app.route("/api/recommendations")
 def api_recommendations():
