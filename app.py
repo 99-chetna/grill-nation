@@ -263,17 +263,18 @@ def api_recommendations():
 
 @app.route("/api/recommendations")
 def api_recommendations():
-    # First check if user_id is passed manually
+    # 1. Check if user_id is passed in query string
     user_id = request.args.get("user_id")
-
-    # If not provided, fall back to logged in session user
+    
+    # 2. If not provided, fallback to session
     if not user_id:
         user_id = session.get("user_id")
 
     if not user_id:
-        return jsonify([])
+        return jsonify({"error": "No user_id provided"}), 400
 
     return jsonify(generate_recommendations(user_id))
+
 
 # -------------------- Dev Login --------------------
 @app.route("/devlogin/<uid>")
