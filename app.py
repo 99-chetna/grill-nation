@@ -110,10 +110,10 @@ def generate_recommendations(user_id: str):
         return "".join(text.lower().split())
 
     def find_menu_item(name: str):
-        target = normalize(name)   # ✅ correctly indented
+        target = normalize(name)
 
         if isinstance(menu_data, dict):
-            # Case 1: direct key match (if menu had direct item keys)
+            # Case 1: direct key match
             for key, value in menu_data.items():
                 if normalize(key) == target and isinstance(value, dict):
                     return {"name": key, "price": value.get("price")}
@@ -124,20 +124,15 @@ def generate_recommendations(user_id: str):
                     for it in value:
                         if isinstance(it, dict):
                             item_name = it.get("name", "")
-                            # exact match
                             if normalize(item_name) == target:
                                 return {"name": item_name, "price": it.get("price")}
-                            # substring match
                             if target in normalize(item_name):
                                 return {"name": item_name, "price": it.get("price")}
 
-        # Fallback if not found
         return {"name": name, "price": None}
 
-    # ---------------- Finalize ----------------
     final_recs = [find_menu_item(n) for n in recommendations]
     print("✅ Final recommendations:", final_recs)
-
     return final_recs
 
 # -------------------- Routes --------------------
@@ -246,18 +241,46 @@ def place_order():
 # -------------------- API --------------------
 @app.route("/api/recommendations", methods=["GET"])
 def api_recommendations():
-    """API endpoint to fetch recommendations for the logged-in user."""
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "User not logged in", "recommendations": []}), 401
+    """
+    API endpoint to fetch recommendations.
+    Priority:
+      1) session["user_id"]
+      2) ?uid=<some-uid> query param (testing)
+      3) "test_user" fallback
+    """
+    user_id = session.get("user_id") or request.args.get("uid") or "test_user"
 
     try:
         recs = generate_recommendations(user_id)
-        return jsonify({"user_id": user_id, "recommendations": recs}), 200
+        return jsonify({
+            "user_id": user_id,
+            "recommendations": recs,
+            "source": "session" if "user_id" in session else ("query" if request.args.get("uid") else "fallback")
+        }), 200
     except Exception as e:
         print("❌ Error generating recommendations:", str(e))
         return jsonify({"error": "Failed to generate recommendations", "details": str(e)}), 500
 
+@app.route("/api/recommendations")
+def api_recommendations():
+    # First check if user_id is passed manually
+    user_id = request.args.get("user_id")
+
+    # If not provided, fall back to logged in session user
+    if not user_id:
+        user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify([])
+
+    return jsonify(generate_recommendations(user_id))
+
+# -------------------- Dev Login --------------------
+@app.route("/devlogin/<uid>")
+def devlogin(uid):
+    """Dev-only: set a session user and go to success."""
+    session["user_id"] = uid
+    return redirect(url_for("success"))
 
 # -------------------- Quick Order --------------------
 @app.route("/quick_order", methods=["POST"])
@@ -281,11 +304,6 @@ def quick_order():
     })
 
     return jsonify({"success": True, "message": f"Order placed for {item_name}"}), 200
-
-@app.route("/api/recommendations/<test_user>")
-def api_recommendations_test(test_user):
-    return jsonify(generate_recommendations(test_user))
-
 
 # -------------------- Run App --------------------
 if __name__ == '__main__':
