@@ -278,6 +278,11 @@ def quick_order():
 
     return jsonify({"success": True, "message": f"Order placed for {item_name}"}), 200
 
+@app.route("/api/recommendations/<test_user>")
+def api_recommendations_test(test_user):
+    return jsonify(generate_recommendations(test_user))
+
+
 # -------------------- Run App --------------------
 if __name__ == '__main__':
     app.run(debug=True)
