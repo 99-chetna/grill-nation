@@ -30,11 +30,15 @@ else:
 
 
 # -------------------- Helper: Recommendation Logic --------------------
-# -------------------- Helper: Recommendation Logic --------------------
 def generate_recommendations(user_id: str):
-    """Generate recommendations for a user (only name + price)."""
+    """Generate recommendations for a user (name + price)."""
     orders_ref = db.reference("orders")
     orders = orders_ref.get() or {}
+
+    # 🔍 Debug: see what Firebase returned
+    import json
+    print("🔥 Raw Orders Data:")
+    print(json.dumps(orders, indent=2))
 
     # Build user -> items purchased mapping
     user_items = {}
@@ -42,16 +46,25 @@ def generate_recommendations(user_id: str):
         items_bought = []
         if isinstance(user_orders, dict):
             for _, details in user_orders.items():
-                if isinstance(details, dict) and "items" in details and isinstance(details["items"], list):
-                    for it in details["items"]:
-                        name = (it.get("name") if isinstance(it, dict) else None)
-                        if name:
-                            items_bought.append(name)
-        user_items[uid] = items_bought
+                if not isinstance(details, dict):
+                    continue
+                items = details.get("items")
+                # handle list
+                if isinstance(items, list):
+                    for it in items:
+                        if isinstance(it, dict) and "name" in it:
+                            items_bought.append(it["name"].strip())
+                # handle dict (in case items are stored differently)
+                elif isinstance(items, dict):
+                    for _, it in items.items():
+                        if isinstance(it, dict) and "name" in it:
+                            items_bought.append(it["name"].strip())
+        if items_bought:
+            user_items[uid] = items_bought
 
     # --- collaborative filtering ---
     recommendations = []
-    if user_id in user_items and len(user_items[user_id]) > 0:
+    if user_id in user_items and user_items[user_id]:
         all_items = sorted({name for items in user_items.values() for name in items})
         if all_items:
             df = pd.DataFrame(0, index=list(user_items.keys()), columns=all_items, dtype=int)
@@ -81,7 +94,7 @@ def generate_recommendations(user_id: str):
                     recommendations = [k for k, _ in sorted(candidate_scores.items(),
                                                            key=lambda x: x[1], reverse=True)[:8]]
 
-    # --- fallback to popular items if no recommendations ---
+    # --- fallback to popular items ---
     if not recommendations:
         all_counts = {}
         for items in user_items.values():
@@ -94,22 +107,24 @@ def generate_recommendations(user_id: str):
     menu_data = menu_ref.get() or {}
 
     def find_menu_item(name: str):
-        name = name.strip().lower()
+        name_l = name.strip().lower()
         if isinstance(menu_data, dict):
-            for key, value in menu_data.items():
-                if isinstance(value, dict) and key.strip().lower() == name:
-                    return {
-                        "name": key,
-                        "price": value.get("price")
-                    }
+            # direct key match
+            if name_l in (k.strip().lower() for k in menu_data.keys()):
+                for key, value in menu_data.items():
+                    if key.strip().lower() == name_l:
+                        return {"name": key, "price": value.get("price")}
+            # look inside lists
+            for _, value in menu_data.items():
                 if isinstance(value, list):
                     for it in value:
-                        if isinstance(it, dict) and it.get("name", "").strip().lower() == name:
-                            return {
-                                "name": it.get("name"),
-                                "price": it.get("price")
-                            }
-        return {"name": name.title(), "price": None}
+                        if isinstance(it, dict) and it.get("name", "").strip().lower() == name_l:
+                            return {"name": it.get("name"), "price": it.get("price")}
+        return {"name": name, "price": None}
+
+    # ✅ Debug prints go here, inside the function
+    print("✅ User items mapping:", user_items)
+    print("✅ Recommendations raw:", recommendations)
 
     return [find_menu_item(n) for n in recommendations]
 
