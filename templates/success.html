@@ -22,16 +22,6 @@
     h2 {
       color: #008000;
     }
-    .recommendations {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f9f9f9;
-      border-radius: 10px;
-    }
-    .item {
-      margin: 10px 0;
-      font-size: 18px;
-    }
   </style>
 </head>
 <body>
@@ -39,109 +29,20 @@
     <h2>✅ Order placed successfully!</h2>
     <p>Thank you for your order. We’re preparing it for delivery 🚚</p>
 
-    <div class="recommendations">
-      <h3>🍴 Next time, you might like…</h3>
-      <div id="recommendList">
-        <!-- JS will inject recommendations here -->
-      </div>
-    </div>
-<button onclick="window.location.href='/'" 
-  style="
-    background-color: red; 
-    color: white; 
-    font-size: 18px; 
-    font-weight: bold;
-    padding: 12px 24px; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer;
-    margin-top: 20px;
-  ">
-  ⬅ Back to Home
-</button>
-
+    <button onclick="window.location.href='/'" 
+      style="
+        background-color: red; 
+        color: white; 
+        font-size: 18px; 
+        font-weight: bold;
+        padding: 12px 24px; 
+        border: none; 
+        border-radius: 8px; 
+        cursor: pointer;
+        margin-top: 20px;
+      ">
+      ⬅ Back to Home
+    </button>
   </div>
-<script>
-  async function loadRecommendations() {
-    try {
-      console.log("🔄 Fetching recommendations from /api/recommendations...");
-      const res = await fetch("/api/recommendations");
-      console.log("📡 Response status:", res.status);
-
-      const data = await res.json();
-      console.log("📥 Raw API data:", data);
-
-      const recList = document.getElementById("recommendList");
-      recList.innerHTML = "";
-
-      // ✅ Access correct array
-      const recommendations = data.recommendations || [];
-
-      if (recommendations.length === 0) {
-        recList.innerHTML = "<p>No recommendations yet. Try ordering more 😊</p>";
-      } else {
-        recommendations.forEach(item => {
-          console.log("👉 Rendering recommendation item:", item);
-
-          const div = document.createElement("div");
-          div.className = "item";
-          div.innerHTML = `
-            <strong>${item.name}</strong> 
-            ${item.price ? " - ₹" + item.price : ""} <br>
-
-            <button onclick="addToCart('${item.name}', ${item.price || 0})"
-              style="margin-top:8px; padding:6px 12px; background:#008000; color:white; border:none; border-radius:6px; cursor:pointer;">
-              ➕ Add to Cart
-            </button>
-
-            <button onclick="quickOrder('${item.name}', ${item.price || 0})"
-              style="margin-top:8px; margin-left:5px; padding:6px 12px; background:#ff6600; color:white; border:none; border-radius:6px; cursor:pointer;">
-              🛒 Order Now
-            </button>
-          `;
-          recList.appendChild(div);
-        });
-      }
-    } catch (err) {
-      console.error("❌ Error loading recommendations:", err);
-      document.getElementById("recommendList").innerHTML =
-        "<p>⚠️ Failed to load recommendations.</p>";
-    }
-  }
-
-  async function addToCart(itemName, price) {
-    try {
-      const res = await fetch("/add_to_cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item: itemName, quantity: 1, price: price })
-      });
-      const data = await res.json();
-      console.log("🛒 Add to cart response:", data);
-      alert(data.message);
-    } catch (err) {
-      console.error("❌ Error adding to cart:", err);
-    }
-  }
-
-  async function quickOrder(itemName, price) {
-    try {
-      const res = await fetch("/quick_order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item: itemName, quantity: 1, price: price })
-      });
-      const data = await res.json();
-      console.log("⚡ Quick order response:", data);
-      alert(data.message);
-      if (data.success) window.location.href = "/success";
-    } catch (err) {
-      console.error("❌ Error placing quick order:", err);
-    }
-  }
-
-  loadRecommendations();
-</script>
-
 </body>
 </html>
