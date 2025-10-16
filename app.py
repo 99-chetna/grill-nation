@@ -212,32 +212,35 @@ def quick_order():
 # -------------------- Sync Old Firebase Orders --------------------
 @app.route("/sync_old_data", methods=["GET"])
 def sync_old_data():
-    """
-    Sync existing Firebase Realtime DB orders:
-    orders -> user_id -> history -> order_id -> items
-    """
+    print("🔍 Starting sync_old_data...")
     try:
         orders_ref = db.reference("orders")
         all_orders = orders_ref.get()
 
         if not all_orders:
+            print("❌ No data found in /orders")
             return jsonify({"message": "No existing orders found"}), 404
+
+        print("✅ Found data under /orders:")
+        print(json.dumps(all_orders, indent=2)[:1000])  # print only first 1000 chars
 
         rows = [["User ID", "Customer Name", "Phone", "Address", "Item", "Quantity", "Price", "Total", "Timestamp"]]
 
         for user_id, user_data in all_orders.items():
+            print(f"📂 Processing user: {user_id}")
             history = user_data.get("history", {})
-            if not isinstance(history, dict):
+            if not history:
+                print(f"⚠️ No history for {user_id}")
                 continue
 
             for order_id, order_data in history.items():
                 address = order_data.get("address", "")
-                customer_name = order_data.get("name", "")
+                name = order_data.get("name", "")
                 phone = order_data.get("phone", "")
                 timestamp = order_data.get("timestamp", "")
                 total = order_data.get("total", "")
-
                 items = order_data.get("items", [])
+
                 if isinstance(items, dict):
                     items = items.values()
 
@@ -245,16 +248,18 @@ def sync_old_data():
                     item_name = item.get("name", "")
                     price = item.get("price", "")
                     qty = item.get("quantity", "")
-                    rows.append([user_id, customer_name, phone, address, item_name, qty, price, total, timestamp])
+                    rows.append([user_id, name, phone, address, item_name, qty, price, total, timestamp])
+
+        print(f"🧾 Total rows prepared: {len(rows)}")
 
         if len(rows) <= 1:
-            return jsonify({"message": "No data found to sync"}), 200
+            print("⚠️ No rows to sync to Google Sheets")
+            return jsonify({"message": "No items to sync"}), 200
 
-        success = append_rows_to_sheet(rows)
-        if success:
-            return jsonify({"success": True, "message": f"{len(rows)-1} records synced."}), 200
-        else:
-            return jsonify({"success": False, "message": "Failed to write to sheet"}), 500
+        # Push to Google Sheet
+        append_rows_to_sheet(rows)
+        print("✅ Successfully pushed rows to Google Sheets")
+        return jsonify({"success": True, "message": f"{len(rows)-1} records synced."}), 200
 
     except Exception as e:
         print("⚠️ Sync failed:", e)
