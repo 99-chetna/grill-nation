@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: grill-nation
-    env: python
-    buildCommand: ""
-    startCommand: gunicorn app:app
-    envVars:
-      - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: firebaseconfig.json
