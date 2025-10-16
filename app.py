@@ -54,28 +54,39 @@ except Exception as e:
     print("⚠️ Google Sheets connection failed:", e)
     sheet = None
 
-# -------------------- Helper: Safe Append with Retry --------------------
-def append_rows_to_sheet(rows, max_retries=3):
-    """Append rows to Google Sheets with retry on failure."""
+# -------------------- Helper: Batch Append with Retry --------------------
+def append_rows_to_sheet(rows, batch_size=500, max_retries=3):
+    """Append rows to Google Sheets safely in batches of 500."""
     if not sheet or not SPREADSHEET_ID:
         print("⚠️ Sheets not configured (missing credentials or ID)")
         return False
 
-    for attempt in range(max_retries):
-        try:
-            sheet.values().append(
-                spreadsheetId=SPREADSHEET_ID,
-                range="Sheet1!A1",
-                valueInputOption="RAW",
-                body={"values": rows}
-            ).execute()
-            print(f"✅ Successfully appended {len(rows)} rows to Google Sheets.")
-            return True
-        except Exception as e:
-            print(f"⚠️ Attempt {attempt+1} failed: {e}")
-            time.sleep(2)
-    print("❌ All retries failed. Data not sent to Google Sheets.")
-    return False
+    total_rows = len(rows)
+    print(f"🧾 Preparing to append {total_rows} rows in batches of {batch_size}...")
+
+    for start in range(0, total_rows, batch_size):
+        end = start + batch_size
+        batch = rows[start:end]
+
+        for attempt in range(max_retries):
+            try:
+                sheet.values().append(
+                    spreadsheetId=SPREADSHEET_ID,
+                    range="Sheet1!A1",
+                    valueInputOption="RAW",
+                    body={"values": batch}
+                ).execute()
+                print(f"✅ Synced batch {start//batch_size + 1}: rows {start+1}–{min(end, total_rows)}")
+                break
+            except Exception as e:
+                print(f"⚠️ Attempt {attempt+1} failed for batch {start//batch_size + 1}: {e}")
+                time.sleep(2)
+        else:
+            print(f"❌ Failed all retries for batch {start//batch_size + 1}")
+            return False
+
+    print(f"✅ Finished syncing {total_rows} rows to Google Sheets.")
+    return True
 
 # -------------------- Routes --------------------
 @app.route('/')
