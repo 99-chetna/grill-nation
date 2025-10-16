@@ -223,6 +223,25 @@ def quick_order():
 
     return jsonify({"success": True, "message": "Quick order placed & synced"}), 200
 
+
+
+
+@app.route("/test_sync")
+def test_sync():
+    """Test route to verify Google Sheets connection manually."""
+    try:
+        test_data = [
+            ["TestUser123", "Test Customer", "9876543210", "Test City", "Veg Burger", 2, 199, "398", "2025-10-16 21:00:00"]
+        ]
+        success = append_rows_to_sheet(test_data)
+        if success:
+            return jsonify({"success": True, "message": "✅ Test row added to Google Sheet!"}), 200
+        else:
+            return jsonify({"success": False, "message": "⚠️ Failed to append to Google Sheet"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # -------------------- Run App --------------------
 if __name__ == '__main__':
     app.run(debug=True)
