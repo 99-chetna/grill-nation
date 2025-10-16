@@ -19,9 +19,9 @@ firebase_web_config_json = os.environ.get("FIREBASE_CONFIG")
 firebase_admin_json = os.environ.get("FIREBASE_ADMIN_SDK")
 
 if not firebase_web_config_json:
-    raise RuntimeError("Missing FIREBASE_CONFIG environment variable")
+    raise RuntimeError("❌ Missing FIREBASE_CONFIG environment variable")
 if not firebase_admin_json:
-    raise RuntimeError("Missing FIREBASE_ADMIN_SDK environment variable")
+    raise RuntimeError("❌ Missing FIREBASE_ADMIN_SDK environment variable")
 
 firebase_web_config = json.loads(firebase_web_config_json)
 firebase = pyrebase.initialize_app(firebase_web_config)
@@ -33,7 +33,7 @@ cred = credentials.Certificate(firebase_admin_config)
 if not firebase_admin._apps:
     database_url = firebase_web_config.get("databaseURL")
     if not database_url:
-        raise RuntimeError("FIREBASE_CONFIG must include databaseURL")
+        raise RuntimeError("❌ FIREBASE_CONFIG must include databaseURL")
     firebase_admin.initialize_app(cred, {"databaseURL": database_url})
 
 # -------------------- Google Sheets Setup --------------------
@@ -43,10 +43,12 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 try:
     google_creds_json = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
     if not google_creds_json:
-        raise ValueError("Missing GOOGLE_SHEETS_CREDENTIALS environment variable")
+        raise ValueError("❌ Missing GOOGLE_SHEETS_CREDENTIALS environment variable")
 
     google_creds_dict = json.loads(google_creds_json)
-    creds = service_account.Credentials.from_service_account_info(google_creds_dict, scopes=SCOPES)
+    creds = service_account.Credentials.from_service_account_info(
+        google_creds_dict, scopes=SCOPES
+    )
     sheet_service = build("sheets", "v4", credentials=creds)
     sheet = sheet_service.spreadsheets()
     print("✅ Connected to Google Sheets successfully via environment variable.")
@@ -183,9 +185,12 @@ def place_order():
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     new_order_ref.set({"items": items, "timestamp": timestamp})
 
-    cart_ref.set([])  # clear cart
+    cart_ref.set([])  # clear cart after placing order
 
-    rows = [[user_id, item.get("name"), item.get("quantity"), item.get("price"), "", "", "", "", timestamp] for item in items]
+    rows = [
+        [user_id, item.get("name"), item.get("quantity"), item.get("price"), "", "", "", "", timestamp]
+        for item in items
+    ]
 
     if append_rows_to_sheet(rows):
         print(f"✅ Auto-synced {len(rows)} items for {user_id} to Google Sheets.")
@@ -212,7 +217,10 @@ def quick_order():
     order_ref = db.reference(f"orders/{user_id}/history")
     new_order_ref = order_ref.push()
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    new_order_ref.set({"items": [{"name": item_name, "quantity": qty, "price": price}], "timestamp": timestamp})
+    new_order_ref.set({
+        "items": [{"name": item_name, "quantity": qty, "price": price}],
+        "timestamp": timestamp
+    })
 
     rows = [[user_id, item_name, qty, price, "", "", "", "", timestamp]]
 
@@ -223,24 +231,6 @@ def quick_order():
 
     return jsonify({"success": True, "message": "Quick order placed & synced"}), 200
 
-
-
-@app.route("/test_sync")
-def test_sync():
-    """Simple test route to verify Sheets connection"""
-    try:
-        test_rows = [["TestUser123", "Test Item", 1, 99]]
-        sheet.values().append(
-            spreadsheetId=SPREADSHEET_ID,
-            range="Sheet1!A1",
-            valueInputOption="RAW",
-            body={"values": test_rows}
-        ).execute()
-        return jsonify({"success": True, "message": "✅ Test row added to Google Sheet!"})
-    except Exception as e:
-        print("⚠️ Test sync failed:", e)
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
+# -------------------- Run App --------------------
 if __name__ == '__main__':
     app.run(debug=True)
