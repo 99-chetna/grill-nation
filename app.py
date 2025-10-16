@@ -297,6 +297,22 @@ def quick_order():
 #         print("⚠️ Error during old data sync:", e)
 #         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/test_sync")
+def test_sync():
+    """Simple test route to verify Sheets connection"""
+    try:
+        test_rows = [["TEST_USER", "John Doe", "9876543210", "Test City", "Test Item", 1, 99, "", time.strftime("%Y-%m-%d %H:%M:%S")]]
+        sheet.values().append(
+            spreadsheetId=SPREADSHEET_ID,
+            range="Sheet1!A1",
+            valueInputOption="RAW",
+            body={"values": test_rows}
+        ).execute()
+        return jsonify({"success": True, "message": "✅ Test row added to Google Sheet!"})
+    except Exception as e:
+        print("⚠️ Test sync failed:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 # -------------------- Run App --------------------
 if __name__ == '__main__':
