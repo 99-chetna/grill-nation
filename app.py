@@ -231,6 +231,48 @@ def quick_order():
 
     return jsonify({"success": True, "message": "Quick order placed & synced"}), 200
 
+@app.route("/sync_old_data")
+def sync_old_data():
+    """One-time sync of all existing Firebase orders to Google Sheets in batches."""
+    try:
+        orders_ref = db.reference("orders")
+        all_orders = orders_ref.get()
+
+        if not all_orders:
+            return jsonify({"success": False, "message": "No existing orders found in Firebase."})
+
+        rows = []
+        for user_id, user_data in all_orders.items():
+            history = user_data.get("history", {})
+            for order_id, order_info in history.items():
+                timestamp = order_info.get("timestamp", "")
+                items = order_info.get("items", [])
+                for item in items:
+                    rows.append([
+                        user_id,
+                        item.get("name", ""),
+                        item.get("quantity", ""),
+                        item.get("price", ""),
+                        "", "", "", "", timestamp
+                    ])
+
+        if not rows:
+            return jsonify({"success": False, "message": "No order items found."})
+
+        # Batch sync in 500-row chunks
+        success = append_rows_to_sheet(rows, batch_size=500)
+        if success:
+            return jsonify({"success": True, "message": f"✅ Synced {len(rows)} rows to Google Sheets."})
+        else:
+            return jsonify({"success": False, "message": "❌ Sync failed. Check logs for details."})
+
+    except Exception as e:
+        print("⚠️ Error during old data sync:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+
+
 # -------------------- Run App --------------------
 if __name__ == '__main__':
     app.run(debug=True)
