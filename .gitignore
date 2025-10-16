@@ -15,3 +15,5 @@ firebaseconfig.json
 .DS_Store
 Thumbs.db
 
+# Ignore JSON keys
+*.json
