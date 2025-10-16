@@ -14,7 +14,6 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
 
 # -------------------- Firebase Setup --------------------
-# Expect FIREBASE_CONFIG (web config) and FIREBASE_ADMIN_SDK (service account JSON) in env
 firebase_web_config_json = os.environ.get("FIREBASE_CONFIG")
 firebase_admin_json = os.environ.get("FIREBASE_ADMIN_SDK")
 
@@ -37,7 +36,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {"databaseURL": database_url})
 
 # -------------------- Google Sheets Setup --------------------
-SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")  # must be set in Render env
+SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 try:
@@ -47,7 +46,6 @@ try:
 
     google_creds_dict = json.loads(google_creds_json)
     creds = service_account.Credentials.from_service_account_info(google_creds_dict, scopes=SCOPES)
-
     sheet_service = build("sheets", "v4", credentials=creds)
     sheet = sheet_service.spreadsheets()
     print("✅ Connected to Google Sheets successfully via environment variable.")
@@ -139,10 +137,9 @@ def append_rows_to_sheet(rows):
         print("⚠️ Sheets not configured (sheet or SPREADSHEET_ID missing)")
         return False
     try:
-        # Use a column range so append automatically finds next available row
         sheet.values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range="Sheet1!A:D",
+            range="Sheet1!A1",
             valueInputOption="RAW",
             body={"values": rows}
         ).execute()
@@ -168,9 +165,8 @@ def place_order():
     new_order_ref = order_ref.push()
     new_order_ref.set({"items": items})
 
-    cart_ref.set([])  # clear cart
+    cart_ref.set([])
 
-    # Push to Sheets
     rows = [[user_id, item.get("name"), item.get("quantity"), item.get("price")] for item in items]
     if append_rows_to_sheet(rows):
         print(f"✅ Order for {user_id} added to Google Sheet.")
@@ -206,7 +202,6 @@ def quick_order():
         "items": [{"name": item_name, "quantity": qty, "price": price}]
     })
 
-    # Also log quick order to Google Sheet
     if append_rows_to_sheet([[user_id, item_name, qty, price]]):
         print(f"✅ Quick order for {user_id} added to Google Sheet.")
     else:
@@ -214,38 +209,57 @@ def quick_order():
 
     return jsonify({"success": True, "message": f"Order placed for {item_name}"}), 200
 
-# -------------------- One-time sync route (sync existing Firebase -> Sheets) --------------------
-@app.route("/sync_old_data", methods=["POST", "GET"])
+# -------------------- Sync Old Firebase Orders --------------------
+@app.route("/sync_old_data", methods=["GET"])
 def sync_old_data():
-    """One-time: reads all /orders and appends them to the sheet."""
+    """
+    Sync existing Firebase Realtime DB orders:
+    orders -> user_id -> history -> order_id -> items
+    """
     try:
         orders_ref = db.reference("orders")
         all_orders = orders_ref.get()
+
         if not all_orders:
             return jsonify({"message": "No existing orders found"}), 404
 
-        rows = []
-        for user_id, user_orders in all_orders.items():
-            if not isinstance(user_orders, dict):
-                continue
-            for order_id, order_data in user_orders.items():
-                items = order_data.get("items", [])
-                for item in items:
-                    rows.append([user_id, item.get("name"), item.get("quantity"), item.get("price")])
+        rows = [["User ID", "Customer Name", "Phone", "Address", "Item", "Quantity", "Price", "Total", "Timestamp"]]
 
-        if not rows:
-            return jsonify({"message": "No items to sync"}), 200
+        for user_id, user_data in all_orders.items():
+            history = user_data.get("history", {})
+            if not isinstance(history, dict):
+                continue
+
+            for order_id, order_data in history.items():
+                address = order_data.get("address", "")
+                customer_name = order_data.get("name", "")
+                phone = order_data.get("phone", "")
+                timestamp = order_data.get("timestamp", "")
+                total = order_data.get("total", "")
+
+                items = order_data.get("items", [])
+                if isinstance(items, dict):
+                    items = items.values()
+
+                for item in items:
+                    item_name = item.get("name", "")
+                    price = item.get("price", "")
+                    qty = item.get("quantity", "")
+                    rows.append([user_id, customer_name, phone, address, item_name, qty, price, total, timestamp])
+
+        if len(rows) <= 1:
+            return jsonify({"message": "No data found to sync"}), 200
 
         success = append_rows_to_sheet(rows)
         if success:
-            return jsonify({"success": True, "message": f"{len(rows)} records synced."}), 200
+            return jsonify({"success": True, "message": f"{len(rows)-1} records synced."}), 200
         else:
-            return jsonify({"success": False, "message": "Failed to append to sheet"}), 500
+            return jsonify({"success": False, "message": "Failed to write to sheet"}), 500
 
     except Exception as e:
         print("⚠️ Sync failed:", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
-# -------------------- Run App (local only) --------------------
+# -------------------- Run App --------------------
 if __name__ == '__main__':
     app.run(debug=True)
