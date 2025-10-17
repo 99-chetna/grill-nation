@@ -263,55 +263,59 @@ def quick_order():
     return jsonify({"success": True, "message": "Quick order placed & synced"}), 200
 
 
-# -------------------- One-Time Sync (Commented Out for Safety) --------------------
-# @app.route("/sync_old_data")
-# def sync_old_data():
-#     """One-time sync of all existing Firebase orders to Google Sheets in batches."""
-#     try:
-#         orders_ref = db.reference("orders")
-#         all_orders = orders_ref.get()
-#         if not all_orders:
-#             return jsonify({"success": False, "message": "No existing orders found."})
-#         rows = []
-#         for user_id, user_data in all_orders.items():
-#             history = user_data.get("history", {})
-#             for order_id, order_info in history.items():
-#                 timestamp = order_info.get("timestamp", "")
-#                 items = order_info.get("items", [])
-#                 for item in items:
-#                     rows.append([
-#                         user_id, "", "", "",
-#                         item.get("name", ""),
-#                         item.get("quantity", ""),
-#                         item.get("price", ""),
-#                         "", timestamp
-#                     ])
-#         if not rows:
-#             return jsonify({"success": False, "message": "No order items found."})
-#         success = append_rows_to_sheet(rows, batch_size=500)
-#         if success:
-#             return jsonify({"success": True, "message": f"✅ Synced {len(rows)} rows to Google Sheets."})
-#         else:
-#             return jsonify({"success": False, "message": "❌ Sync failed. Check logs for details."})
-#     except Exception as e:
-#         print("⚠️ Error during old data sync:", e)
-#         return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/test_sync")
-def test_sync():
-    """Simple test route to verify Sheets connection"""
+@app.route("/sync_all_orders")
+def sync_all_orders():
+    """Sync all users' order history from Firebase to Google Sheets."""
     try:
-        test_rows = [["TEST_USER", "John Doe", "9876543210", "Test City", "Test Item", 1, 99, "", time.strftime("%Y-%m-%d %H:%M:%S")]]
-        sheet.values().append(
-            spreadsheetId=SPREADSHEET_ID,
-            range="Sheet1!A1",
-            valueInputOption="RAW",
-            body={"values": test_rows}
-        ).execute()
-        return jsonify({"success": True, "message": "✅ Test row added to Google Sheet!"})
+        orders_ref = db.reference("orders")
+        users_ref = db.reference("users")
+
+        all_orders = orders_ref.get()
+        all_users = users_ref.get() or {}
+
+        if not all_orders:
+            return jsonify({"success": False, "message": "No orders found in Firebase."})
+
+        rows = []
+        for user_id, order_data in all_orders.items():
+            user_info = all_users.get(user_id, {})
+            name = user_info.get("name", "")
+            phone = user_info.get("phone", "")
+            address = user_info.get("address", "")
+
+            history = order_data.get("history", {})
+            for order_id, order_info in history.items():
+                timestamp = order_info.get("timestamp", "")
+                items = order_info.get("items", [])
+                for item in items:
+                    rows.append([
+                        user_id,
+                        name,
+                        phone,
+                        address,
+                        item.get("name", ""),
+                        item.get("quantity", ""),
+                        item.get("price", ""),
+                        "",
+                        timestamp
+                    ])
+
+        if not rows:
+            return jsonify({"success": False, "message": "No items found in orders."})
+
+        success = append_rows_to_sheet(rows)
+        if success:
+            print(f"✅ Synced {len(rows)} total rows to Google Sheets.")
+            return jsonify({"success": True, "message": f"✅ Synced {len(rows)} rows to Google Sheets."})
+        else:
+            print("❌ Failed to sync orders to Google Sheets.")
+            return jsonify({"success": False, "message": "❌ Sync failed. Check logs for details."})
+
     except Exception as e:
-        print("⚠️ Test sync failed:", e)
+        print("⚠️ Error during sync_all_orders:", e)
         return jsonify({"success": False, "error": str(e)}), 500
+
+
 
 
 # -------------------- Run App --------------------
