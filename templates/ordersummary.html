@@ -72,6 +72,7 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
     import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
 
+    // ✅ Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBcn4k8EfyJcTv25UDgaoNmnA1l0MKK2mw",
       authDomain: "recommendation-system-27e6b.firebaseapp.com",
@@ -82,6 +83,7 @@
       appId: "1:644925347402:web:36225ba2481af5f84538b3"
     };
 
+    // ✅ Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -96,6 +98,7 @@
     let cartItems = {};
     let total = 0;
 
+    // ✅ Load user and cart
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         alert("Please log in first.");
@@ -105,7 +108,7 @@
 
       const uid = user.uid;
 
-      // ✅ Fetch user details and pre-fill the inputs
+      // ✅ Fetch user info
       const userRef = ref(db, `users/${uid}`);
       const userSnap = await get(userRef);
       if (userSnap.exists()) {
@@ -137,6 +140,7 @@
       }
     });
 
+    // ✅ Confirm order
     confirmBtn.addEventListener("click", async () => {
       try {
         const user = auth.currentUser;
@@ -170,17 +174,30 @@
           address
         };
 
-        // ✅ Save order data
+        // ✅ Save order to Firebase
         await set(ref(db, `orders/${uid}/latest`), orderData);
         await push(ref(db, `orders/${uid}/history`), orderData);
 
-        // ✅ Save user details back to Firebase for next time
+        // ✅ Save user details
         await set(ref(db, `users/${uid}`), { name, phone, address });
 
         // ✅ Clear cart
         await remove(ref(db, `cart/${uid}`));
 
-  
+        // ✅ Call backend to sync with Google Sheets
+        try {
+          const response = await fetch("/place_order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+          });
+          const data = await response.json();
+          console.log("📤 Sync response:", data);
+        } catch (syncError) {
+          console.error("⚠️ Google Sheets sync failed:", syncError);
+        }
+
+        // ✅ Redirect to success page
         window.location.href = "/success";
 
       } catch (error) {
