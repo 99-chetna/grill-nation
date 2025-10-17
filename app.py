@@ -4,7 +4,7 @@ import time
 import firebase_admin
 from firebase_admin import credentials, db
 import pyrebase
-from flask import Flask, request, session, redirect, url_for, render_template, jsonify
+from flask import Flask, request, redirect, url_for, render_template, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -101,69 +101,15 @@ def success():
     return render_template('success.html')
 
 
-# -------------------- Auth --------------------
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get("email")
-        password = request.form.get("password")
-        try:
-            user = pb_auth.sign_in_with_email_and_password(email, password)
-            info = pb_auth.get_account_info(user['idToken'])
-            uid = info['users'][0]['localId']
-            session["user_id"] = uid
-            return redirect(url_for("dashboard"))
-        except Exception as e:
-            print("❌ Login error:", e)
-            return render_template("login.html", error="Invalid email or password")
-    return render_template("login.html")
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for("homepage"))
-
-
-# -------------------- Cart --------------------
-@app.route("/add_to_cart", methods=["POST"])
-def add_to_cart():
-    if "user_id" not in session:
-        return jsonify({"success": False, "message": "User not logged in"}), 401
-
-    payload = request.get_json(silent=True) or {}
-    item_name = payload.get("item")
-    qty = int(payload.get("quantity", 1))
-    price = payload.get("price", 0)
-
-    if not item_name:
-        return jsonify({"success": False, "message": "No item provided"}), 400
-
-    user_id = session["user_id"]
-    cart_ref = db.reference(f"carts/{user_id}")
-    cart = cart_ref.get() or []
-    cart.append({"name": item_name, "quantity": qty, "price": price})
-    cart_ref.set(cart)
-
-    return jsonify({"success": True, "message": f"{item_name} added to cart"}), 200
-
-
-# -------------------- Dashboard --------------------
-@app.route('/dashboard')
-def dashboard():
-    user_id = session.get("user_id")
-    if not user_id:
-        return redirect(url_for("signup"))
-    return render_template('dashboard.html')
-
-
 # -------------------- Auto-sync on Place Order --------------------
 @app.route("/place_order", methods=["POST"])
 def place_order():
-    """Place order and instantly push to Google Sheets."""
-    if "user_id" not in session:
-        return jsonify({"success": False, "message": "User not logged in"}), 401
+    """Place order and instantly push to Google Sheets using user UID."""
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get("uid")  # ✅ Now coming directly from frontend
 
-    user_id = session["user_id"]
+    if not user_id:
+        return jsonify({"success": False, "message": "Missing user ID"}), 400
 
     # Fetch user info
     user_ref = db.reference(f"users/{user_id}")
@@ -172,30 +118,28 @@ def place_order():
     phone = user_info.get("phone", "")
     address = user_info.get("address", "")
 
-    # Get cart items
-    cart_ref = db.reference(f"carts/{user_id}")
-    items = cart_ref.get() or []
+    # Get order history (latest order)
+    orders_ref = db.reference(f"orders/{user_id}/history")
+    all_orders = orders_ref.get() or {}
+
+    if not all_orders:
+        return jsonify({"success": False, "message": "No orders found"}), 400
+
+    # Get the most recent order
+    latest_order = list(all_orders.values())[-1]
+    items = latest_order.get("items", [])
+    timestamp = latest_order.get("timestamp", time.strftime("%Y-%m-%d %H:%M:%S"))
 
     if not items:
-        return jsonify({"success": False, "message": "Cart is empty"}), 400
+        return jsonify({"success": False, "message": "No items found"}), 400
 
-    # Store order in Firebase
-    order_ref = db.reference(f"orders/{user_id}/history")
-    new_order_ref = order_ref.push()
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    new_order_ref.set({"items": items, "timestamp": timestamp})
-
-    # Clear cart
-    cart_ref.set([])
-
-    # Create rows for Sheets
+    # Create rows for Google Sheets
     rows = [
         [user_id, customer_name, phone, address,
          item.get("name"), item.get("quantity"), item.get("price"), "", timestamp]
         for item in items
     ]
 
-    # Append instantly to Google Sheets
     append_rows_to_sheet(rows)
 
     return jsonify({"success": True, "message": "Order placed and synced!"})
@@ -205,10 +149,11 @@ def place_order():
 @app.route("/quick_order", methods=["POST"])
 def quick_order():
     """Instantly push quick order to Google Sheets."""
-    if "user_id" not in session:
-        return jsonify({"success": False, "message": "User not logged in"}), 401
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get("uid")
 
-    user_id = session["user_id"]
+    if not user_id:
+        return jsonify({"success": False, "message": "Missing user ID"}), 400
 
     # Fetch user info
     user_ref = db.reference(f"users/{user_id}")
@@ -217,25 +162,24 @@ def quick_order():
     phone = user_info.get("phone", "")
     address = user_info.get("address", "")
 
-    data = request.get_json(silent=True) or {}
-    item_name = data.get("item")
-    qty = int(data.get("quantity", 1))
-    price = data.get("price", 0)
+    item_name = payload.get("item")
+    qty = int(payload.get("quantity", 1))
+    price = payload.get("price", 0)
 
     if not item_name:
         return jsonify({"success": False, "message": "No item provided"}), 400
 
+    # Save order in Firebase
     order_ref = db.reference(f"orders/{user_id}/history")
-    new_order_ref = order_ref.push()
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    new_order_ref.set({
+    order_ref.push({
         "items": [{"name": item_name, "quantity": qty, "price": price}],
         "timestamp": timestamp
     })
 
+    # Add to Google Sheet
     rows = [[user_id, customer_name, phone, address,
              item_name, qty, price, "", timestamp]]
-
     append_rows_to_sheet(rows)
 
     return jsonify({"success": True, "message": "Quick order placed and synced!"})

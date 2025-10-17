@@ -97,6 +97,7 @@
 
     let cartItems = {};
     let total = 0;
+    let uid = null;
 
     // ✅ Load user and cart
     onAuthStateChanged(auth, async (user) => {
@@ -106,7 +107,7 @@
         return;
       }
 
-      const uid = user.uid;
+      uid = user.uid;
 
       // ✅ Fetch user info
       const userRef = ref(db, `users/${uid}`);
@@ -149,7 +150,6 @@
           return;
         }
 
-        const uid = user.uid;
         const name = nameInput.value.trim();
         const phone = phoneInput.value.trim();
         const address = addressInput.value.trim();
@@ -184,12 +184,12 @@
         // ✅ Clear cart
         await remove(ref(db, `cart/${uid}`));
 
-        // ✅ Call backend to sync with Google Sheets
+        // ✅ Call backend to sync with Google Sheets — send UID!
         try {
           const response = await fetch("/place_order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({})
+            body: JSON.stringify({ uid })
           });
           const data = await response.json();
           console.log("📤 Sync response:", data);
